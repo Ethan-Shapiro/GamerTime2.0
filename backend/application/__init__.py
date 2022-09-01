@@ -1,11 +1,22 @@
 from flask import Flask, session
 from flask_login import LoginManager
+from apiflask import Schema
+from apiflask.fields import String, Integer
+from apiflask.validators import Range
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from application.config import Config
 from flask_apscheduler import APScheduler
 from flask_caching import Cache
 import os
+
+
+class ComputerIDIn(Schema):
+    computer_id = Integer(validate=[Range(min=1, max=26)])
+
+
+class UsageIn(Schema):
+    usage_id = Integer(validate=[Range(min=1)])
 
 
 db = SQLAlchemy(session_options={"expire_on_commit": False})
