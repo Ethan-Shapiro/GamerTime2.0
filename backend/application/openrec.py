@@ -62,7 +62,7 @@ def set_usage(data: ComputerIDIn) -> dict:
     }
 
 
-@openrec_bp.delete('/')
+@openrec_bp.delete('/j')
 @openrec_bp.input(UsageIn)
 @openrec_bp.output(OpenRecOut, status_code=200)
 @login_required
