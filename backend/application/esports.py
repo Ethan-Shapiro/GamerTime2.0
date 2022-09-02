@@ -1,5 +1,6 @@
 from apiflask import APIBlueprint, Schema
 from apiflask.fields import String, Integer
+from apiflask.validators import OneOf
 from flask import current_app as app
 from . import ComputerIDIn, UsageIn
 from flask_login import login_required
@@ -15,23 +16,21 @@ esports_bp = APIBlueprint(
 
 
 class EsportsOut(Schema):
+    computer_id = Integer()
     usage_id = Integer()
-    start_timestamp = String()
+    email = String()
 
 
 @esports_bp.get('/')
-@esports_bp.output(EsportsOut(many=True), description="A list of computer usages and timestamps.", status_code=200)
+@esports_bp.output(EsportsOut(many=True), description="A list of computer usages, first and last names, student emails, and teams.", status_code=200)
 @login_required
 @permissions_required(['staff', 'admin', 'openrec'])
 def get_usages() -> dict:
     """
     Endpoint that returns a list of all current computer usages.
 
-    Args:
-        data (OpenRecIn): The data containing the valid PC id.
-
     Returns:
-        dict: The new usage id and start timestamp (if successful).
+        dict: A list of computer ids, usage ids,
     """
 
     return {
@@ -47,13 +46,13 @@ def get_usages() -> dict:
 @permissions_required(['staff', 'admin', 'openrec'])
 def set_usage(data: ComputerIDIn) -> dict:
     """
-    Endpoint that sets an openrec pc into use.
+    Endpoint that sets an esports pc into use.
 
     Args:
-        data (OpenRecIn): The data containing the valid PC id.
+        data (ComputerIDIn): The data containing the valid PC id.
 
     Returns:
-        dict: The new usage id and start timestamp (if successful).
+        dict: The new usage id of the computer.
     """
 
     return {
@@ -64,18 +63,18 @@ def set_usage(data: ComputerIDIn) -> dict:
 
 @esports_bp.delete('/')
 @esports_bp.input(UsageIn)
-@esports_bp.output(OpenRecOut, status_code=200)
+@esports_bp.output(EsportsOut, status_code=200)
 @login_required
 @permissions_required(['staff', 'admin', 'openrec'])
 def end_usage(data: UsageIn) -> dict:
     """
-    Endpoint that sets an openrec pc into use.
+    Endpoint that ends the session at the computer with usage id.
 
     Args:
-        data (OpenRecIn): The data containing the valid PC id.
+        data (UsageIn): The data containing the usage id.
 
     Returns:
-        dict: The new usage id and start timestamp (if successful).
+        dict: Whether the usage id was successfully ended.
     """
 
     return {

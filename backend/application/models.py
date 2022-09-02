@@ -15,11 +15,6 @@ import re
 
 NUM_COMPUTERS = 26
 
-COMP_STATUS_KEY = 'computer_statuses'
-TIMESTAMP_KEY = 'computer_timestamps'
-COMP_USAGES_KEY = 'computer_usages'
-SAVED_JOBS_KEY = 'computer_jobs'
-
 IN_USE_STATUS_CODE = 1
 DISABLED_STATUS_CODE = -1
 EMPTY_STATUS_CODE = 0
@@ -32,14 +27,6 @@ user_info_keys = ('first_name', 'last_name',
 
 # Intialize timezone
 pacifictz = zoneinfo.ZoneInfo("US/Pacific")
-
-# redis_host = os.environ.get('REDIS_HOST')
-# redis_pass = os.environ.get('REDIS_PASSWORD')
-# redis_port = int(os.environ.get('REDIS_PORT'))
-
-# my_redis = redis.Redis(host=redis_host, port=redis_port,
-#                        password=redis_pass, ssl=True, ssl_cert_reqs=None, db=0)
-# my_redis = redis.Redis()
 
 
 @login_manager.user_loader
@@ -87,29 +74,6 @@ class Player(db.Model):
     """
     __table__ = db.Model.metadata.tables['public.players']
 
-# class DailySchedules(db.Model):
-#     """
-#     Loads existing User table from PostgreSQL
-#     """
-#     __table__ = db.Model.metadata.tables['public.daily_schedules']
-
-
-# class WeeklySchedules(db.Model):
-#     """
-#     Loads existing User table from PostgreSQL
-#     """
-#     __table__ = db.Model.metadata.tables['public.weekly_schedules']
-
-
-def json_response(status_message: str, status_code: int, body=None):
-    if body:
-        return json.dumps({'statusMessage': status_message,
-                           'status': status_code,
-                           'body': body})
-    else:
-        return json.dumps({'statusMessage': status_message,
-                           'status': status_code})
-
 
 def valid_ucsd_email(email):
     pattern = re.compile('^[A-Za-z0-9]*@ucsd\.edu$')
@@ -125,54 +89,34 @@ def get_pc_status(computer_id: int):
     return computer
 
 
-def set_pc_in_use(computer_id: int, email=None):
+def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
     """
-    A method that sets the given computer id to in use.
+    Attempts to set the current pc into use.
+    Returns whether the query succeeded and a message.
 
-    Parameter(s):
-        comp_id (int): The id of the computer to set to in use.
+    Args:
+        computer_id (int): The computer ID to set into use
+        email (string, optional): The email address of the user if provided. Defaults to None.
+
+    Returns:
+        Tuple[bool, dict]: A success bool and dictionary containing a message and potentially data.
     """
-    # Make sure the computer id is within bounds
-    if computer_id <= 0 or computer_id > NUM_COMPUTERS:
-        return json_response(f'Computer id {computer_id} is out of range', 400)
-
-    comp_index = computer_id - 1
-
-    start_timestamp_seconds = None
-
     # Get the current computer from db
     computer = get_pc_status(computer_id)
 
     if computer.status == DISABLED_STATUS_CODE:
-        return json_response(f"Couldn't set {computer_id} in use because it is disabled.", 400,
-                             body={'usageId': DISABLED_STATUS_CODE})
-
-     # If already enabled, do nothing
-    print(computer.status)
-    if computer.status >= IN_USE_STATUS_CODE:
-        if email:
-            body = {'usageId': computer.status,
-                    'email': computer.email}
-        else:
-            body = {'usageId': computer.status,
-                    'startTimestampSeconds': computer.start_timestamp}
-        return json_response(f'Computer {computer_id} already in use.', 400, body=body)
+        return False, {'message': f"Computer at {computer_id} is disabled."}
 
     # If there is an email provided, we are in esports and don't have a timer
     if email:
-        # Make sure the email is formatted correctly
-        if not valid_ucsd_email(email=email):
-            return json_response(f'Email: {email} is not a valid ucsd email.', 400)
-
         # Query for the users email
         player = query_player(email)
 
         if player == None:
-            return json_response(f"Player with email: {email} doesn't exist!", 400)
+            return False, {'message': f"Player with email {email} doesn't exist."}
 
         # Create new usage
         new_usage = create_usage(player.player_id, computer_id, esports=True)
-        print(new_usage)
 
     else:
         # query for open rec user id
@@ -185,42 +129,38 @@ def set_pc_in_use(computer_id: int, email=None):
         start_timestamp_seconds = datetime.timestamp(new_usage.start_timestamp.replace(
             tzinfo=timezone.utc))
 
-        # Create auto end time 8 hours later
-        # one_min_seconds = 60
-        eight_hours_seconds = (1/4) * 60 * 60  # 8 hours * 60 min * 60 sec
-        end_datetime = start_timestamp_seconds + eight_hours_seconds
-        print(datetime.fromtimestamp(end_datetime))
-        # Start timer for 8 hour auto ending of session
-        job_id = f'auto_end_{new_usage.usage_id}'
-        apscheduler.add_job(id=job_id, func=end_pc_use,
-                            run_date=datetime.fromtimestamp(end_datetime),
-                            kwargs={'usage_id': new_usage.usage_id,
-                                    'computer_id': computer_id,
-                                    'esports': False,
-                                    'scheduled': True})
-
     # Change the current status of the computer in Postgres
     worked = change_pc_status(
         computer, new_usage.usage_id, new_usage.start_timestamp, email)
 
-    if not worked:
-        return worked
+    # Create auto end time 8 hours later
+    # one_min_seconds = 60
+    eight_hours_seconds = (1/4) * 60 * 60  # 8 hours * 60 min * 60 sec
+    end_datetime = start_timestamp_seconds + eight_hours_seconds
+
+    # Start timer for 8 hour auto ending of session
+    job_id = f'auto_end_{new_usage.usage_id}'
+    apscheduler.add_job(id=job_id, func=end_pc_use,
+                        run_date=datetime.fromtimestamp(end_datetime),
+                        kwargs={'usage_id': new_usage.usage_id,
+                                'computer_id': computer_id,
+                                'esports': False,
+                                'scheduled': True})
 
     if email:
         body = {'usageId': new_usage.usage_id}
     else:
         body = {'usageId': new_usage.usage_id,
                 'startTimestampSeconds': start_timestamp_seconds}
-    print(body)
 
-    # Delete the current cache pc usages if it exists
-    try:
-        cache.clear()
-        print('deleted db_pc_usages from cache')
-    except:
-        print("db_pc_usages not in cache")
+    if not worked:
+        return False,
+    return worked, {'message': "Success!"}.update(body)
 
-    return json_response(f'Computer {computer_id} now in use!', 200, body)
+
+def start_timeer_job(usage_id: int) -> bool:
+
+    return True
 
 
 def change_pc_status(computer: ComputerStatus, status: int, start_timestamp=None, email=None):
@@ -250,10 +190,7 @@ def end_usage_change_status(usage_id: int, computer_id: int, esports=False):
 
     # Update the parameters
     if usage == None:
-        return json_response("Usage id not found.", 400)
-
-    if computer == None:
-        return json_response("Computer id not found.", 400)
+        return False
 
     # Set the attributes
     setattr(usage, 'end_timestamp', datetime.utcnow())
@@ -266,7 +203,7 @@ def end_usage_change_status(usage_id: int, computer_id: int, esports=False):
         return True
     except IntegrityError as ie:
         db.session.rollback()
-        return json_response("Failed to connect to database.", 400)
+        return False
 
 
 def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
@@ -280,8 +217,7 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
     computer = get_pc_status(computer_id)
 
     if computer.status == DISABLED_STATUS_CODE:
-        return json_response(f"Couldn't end computer {computer_id} because it is disabled.", 400,
-                             body={'usageId': DISABLED_STATUS_CODE})
+        return False, {"message": "Computer is disabled."}
 
      # If already enabled, do nothing
     if computer.status != usage_id:
@@ -291,7 +227,7 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
         else:
             body = {'usageId': computer.status,
                     'startTimestampSeconds': computer.start_timestamp}
-        return json_response(f'Old computer use already ended at computer {computer_id}.', 400, body=body)
+        return False, ({'message': f'Old computer use already ended at computer {computer_id}.'} | body)
 
     if esports:
         # attempt to end usage and change status on db
@@ -305,7 +241,7 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
         except:
             print("db_pc_usages not in cache")
 
-        return json_response("Computer session ended!", 200)
+        return
 
     app = apscheduler.app
     with app.app_context():
