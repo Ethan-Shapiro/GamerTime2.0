@@ -19,7 +19,7 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = "sqlite:///{0}/app-dev.db".format(basedir)
+    SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@localhost:5432/postgres"
 
 
 class TestingConfig(BaseConfig):
@@ -28,7 +28,7 @@ class TestingConfig(BaseConfig):
     DEBUG = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = "sqlite:///{0}/app-test.db".format(basedir)
+    SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@localhost:5432/postgres"
 
 
 class ProductionConfig(BaseConfig):
