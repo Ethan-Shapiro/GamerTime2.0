@@ -1,5 +1,8 @@
 import os
 from typing import List, Type
+from dotenv import load_dotenv
+
+load_dotenv()
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 

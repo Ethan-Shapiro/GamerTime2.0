@@ -11,6 +11,19 @@ import zoneinfo
 import os
 import time
 import re
+from sqlalchemy.sql import expression
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.types import DateTime
+
+
+class utcnow(expression.FunctionElement):
+    type = DateTime()
+    inherit_cache = True
+
+
+@compiles(utcnow, 'postgresql')
+def pg_utcnow(element, compiler, **kw):
+    return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
 
 
 NUM_COMPUTERS = 26
@@ -77,17 +90,20 @@ class Usage(db.Model):
     Loads existing User table from PostgreSQL
     """
     id = db.Column('id', db.Integer, primary_key=True)
-    user_id = db.Column('player_id', db.Integer,
-                        db.ForeignKey('player.id'), nullable=False)
+    player_id = db.Column('player_id', db.Integer,
+                          db.ForeignKey('player.id'), nullable=False)
     computer_id = db.Column('computer_id', db.Integer,
                             db.ForeignKey('computer_status.id'), nullable=False)
     start_timestamp = db.Column(
-        'start_timestamp', db.DateTime, server_default=db.func.now())
+        'start_timestamp', db.DateTime, server_default=utcnow())
     end_timestamp = db.Column('end_timestamp', db.DateTime)
 
-    def __init__(self, user_id, computer_id):
-        self.user_id = user_id
+    def __init__(self, player_id, computer_id):
+        self.player_id = player_id
         self.computer_id = computer_id
+
+    def get_columns(self):
+        return {'id', 'player_id', 'computer_id', 'start_timestamp', 'end_timestamp'}
 
 
 class Player(db.Model):
@@ -325,11 +341,18 @@ def get_db_pc_usages(esports=False):
     return [dict(x) for x in usages]
 
 
+def get_openrec_days_usages():
+    today = datetime.utcnow() - timedelta(hours=24)
+    usages = Usage.query.filter(
+        Usage.start_timestamp >= today, Usage.player_id == 2).all()
+    return usages, today
+
+
 def get_days_usages():
     """
     Returns the usages from today as a list of Usages and today's date.
     """
-    today = datetime.now(pacifictz).date()
+    today = datetime.utcnow() - timedelta(hours=24)
     usages = Usage.query.filter(Usage.start_timestamp >= today).all()
     return usages, today
 
@@ -387,43 +410,6 @@ def create_user(user_dict: dict) -> User:
     return user
 
 
-def edit_user_email(new_email: str, computer_id: int) -> Tuple[str, int]:
-    """
-    Returns a string with a code whether editing the user succeeded or failed.
-
-    Parameter(s):
-        edit (dict): A user dictionary containing the computer_id where the user is and at least one other field to edit.
-    """
-    # Check if user exists at the computer id
-    computer = get_pc_status(computer_id)
-
-    if computer.status < IN_USE_STATUS_CODE:
-        return f'No user at computer id {computer_id}', 400
-
-    # Query the usage at the computer
-    usage = query_usage(computer.usage_id, esports=True)
-
-    # Get the user with the given id.
-    player = query_player(None, usage.player_id)
-
-    if not player:
-        return json_response(f"Cannot edit nonexistent user.", 400)
-
-    # Edit player email
-    setattr(player, "email", new_email)
-
-    # Commit to database
-    try:
-        db.session.commit()
-    except IntegrityError as ie:
-        db.session.rollback()
-        return ie.detail
-
-    return json_response(f"Successfully edited user at {computer_id}",
-                         200,
-                         {'email': player.email})
-
-
 def create_usage(user_id: int, computer_id: int):
     """
     Returns a new usage object.
@@ -432,7 +418,7 @@ def create_usage(user_id: int, computer_id: int):
         user_id (int): The id of the user.
         computer_id (int): The id of the computer the user is using.
     """
-    usage = Usage(user_id=user_id, computer_id=computer_id)
+    usage = Usage(player_id=user_id, computer_id=computer_id)
 
     try:
         db.session.add(usage)
@@ -453,49 +439,3 @@ def query_usage(usage_id: int):
     """
     usage = Usage.query.filter_by(id=usage_id).first()
     return usage
-
-
-def add_user_usage(user_usage_dict: dict) -> Tuple[str, int]:
-    """
-    Returns true with a sucess message if the user usage was added successfully and false with an error message otherwise.
-
-    Parameter(s):
-        raw_user (dict): A dictionary containing the fields for a new user.
-    """
-    # Check if the user exists in the database
-    computer_id = user_usage_dict.pop('computer_id')
-    user_dict = user_usage_dict
-
-    assert computer_id > 0 and computer_id <= NUM_COMPUTERS
-    valid_keys = ('first_name', 'last_name', 'email', 'role', 'team')
-    if not all([True if k in valid_keys else False for k in user_dict]):
-        return json.dumps({'statusMessage': f"Invalid key in the user dict",
-                           'status': 400,
-                           'body': None})
-
-    user = query_user(user_dict['email'])
-
-    message = ""
-
-    if not user:
-        # Create a new user before creating the new usage log
-        user = create_user(user_dict)
-        message += f"Successfully created user with email: {user_dict['email']}\n"
-
-    if not user:
-        return "Failed to create user.", 400
-
-    # Update new user info data
-    user_dict['user_id'] = user.user_id
-    user_dict['email_prefix'] = user_dict['email'].split('@')[0]
-    user_dict.pop('email')
-
-    # Create new usage log for the user
-    usage = create_usage(user.user_id, computer_id)
-
-    if not usage:
-        return "Failed to create new usage.", 400
-
-    message += f"Usage created at computer id: {computer_id}"
-
-    return json.dumps({'statusMessage': message, 'status': 200, 'body': {'user_id': user.user_id}})

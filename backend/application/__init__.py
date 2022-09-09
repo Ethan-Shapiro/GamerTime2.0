@@ -34,6 +34,7 @@ def create_app(config_class=DevelopmentConfig):
     with app.app_context():
         # Initialize models
         from .models import Usage, ComputerStatus, Player, User
+        from . import gsheet_autowriter
         db.create_all()
 
         # Initialize Login Manager

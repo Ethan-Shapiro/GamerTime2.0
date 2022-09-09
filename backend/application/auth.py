@@ -6,7 +6,8 @@ from apiflask import APIBlueprint, Schema
 from apiflask.fields import String, Boolean
 from flask import current_app as app
 from application.models import query_user, create_user
-from flask_login import login_user, current_user, logout_user
+from flask_login import login_user, current_user, logout_user, login_required
+from custom_decorators import permissions_required
 
 # Configure Blueprint
 auth_bp = APIBlueprint(
@@ -54,6 +55,7 @@ def login_page(data) -> Tuple[bool, str]:
 
 @auth_bp.route('/logout')
 @auth_bp.output(AuthOut)
+@login_required
 def logout() -> Tuple[bool, str]:
     """Endpoint that logs out the current logged in user.
 
@@ -73,6 +75,8 @@ def logout() -> Tuple[bool, str]:
                location='json'
                )
 @auth_bp.output(AuthOut)
+@login_required
+@permissions_required(['admin'])
 def register_page(data) -> Tuple[bool, str]:
     """Endpoint that creates a new user on the database.
 

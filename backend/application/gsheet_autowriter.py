@@ -1,9 +1,11 @@
+from datetime import date, datetime, timezone, timedelta
+import zoneinfo
 import gspread
 import json
 import os
 from datetime import date, datetime
-from application.models import get_days_usages, query_users
-from application import apscheduler
+from .models import get_days_usages, query_users, get_openrec_days_usages
+from . import apscheduler
 from gspread_formatting import *
 
 
@@ -13,10 +15,11 @@ CREDS = json.loads(RAW_CREDS)
 
 # Initial gspread instance
 gsheet = gspread.service_account_from_dict(CREDS)
-CURRENT_SHEET_ID = "1WLX_OJnwisAFYgNSAQxYzORVY4ehblfIbtSebqwFHcc"
+CURRENT_SHEET_ID = "1AErY7nT-7nYShnLenN3KjRMnst1xh_EIsv-76ybDfqI"
+pacifictz = zoneinfo.ZoneInfo("US/Pacific")
 
 
-# @apscheduler.task('interval', id='testing_apscheduler', seconds=30)
+# @apscheduler.task('interval', id='testing_apscheduler', seconds=10)
 def testing_print():
     print("Apscheduler worked!")
 
@@ -62,17 +65,19 @@ def update_sheet(worksheet, usages, dse_roster):
     return cells
 
 
-def create_sheet(sheet, title: str, rows: str, cols: str):
+def create_sheet(sheet, title: str, rows: int, cols: int):
     """
     Creates a new worksheet with the default format in the specified google sheet.
     """
-    assert int(rows) > 0
-    assert int(cols) > 0
+    if int(rows) <= 0:
+        rows = 1
+    if int(cols) <= 0:
+        cols = 1
 
     try:
         new_sheet = sheet.add_worksheet(title=title, rows=rows, cols=cols)
     except Exception as e:  # Probably already created.
-        if 'A sheet with the name' in e.args[0]['message']:
+        if 'already exists' in e.args[0]['message']:
             new_sheet = sheet.worksheet(title=title)
     return new_sheet
 
@@ -128,41 +133,113 @@ def format_sheet(worksheet, cells: str):
     rules.save()
 
 
-@apscheduler.task('interval', id='nightly_update', hours=24, start_date='2022-03-13 12:00:00', misfire_grace_time=900)
+def format_openrec_sheet(sheet, cells: str):
+    heading_format = CellFormat(
+        backgroundColor=Color(0.9, 0.9, 1),
+        textFormat=TextFormat(bold=True, fontSize=14),
+        horizontalAlignment='CENTER'
+    )
+    format_cell_range(sheet, 'A1:H1', heading_format)
+    rules = get_conditional_format_rules(sheet)
+    rules.save()
+    return True
+
+
+def save_openrec_usages() -> bool:
+    OPEN_REC_SHEET_ID = '1L79q6FFIpxjgtnsp0ugw7Hvx9jrOHikjhxlfO-rOg20'
+    # Load the OpenRec Google Sheet
+    openrec_sheet = gsheet.open_by_key(OPEN_REC_SHEET_ID)
+
+    # Get the OpenRec Usages
+    usages, date = get_openrec_days_usages()
+    if len(usages) == 0:
+        return True
+
+    month_day_str = f'{str(date.month)}/{str(date.day)}'
+
+    # Create a new sheet
+    new_sheet = create_sheet(openrec_sheet, title=month_day_str, rows=len(
+        usages), cols=len(usages[0].get_columns())-1)
+
+    # Add OpenRecUsages to the sheet
+    cells = write_openrec_usages(new_sheet, usages)
+
+    # Apply formatting
+    format_openrec_sheet(new_sheet, cells)
+
+    return True
+
+
+def convert_to_pacific(timestamp: datetime) -> datetime:
+    PST_UTC_OFFSET = timedelta(hours=-7)
+    return (timestamp + PST_UTC_OFFSET).astimezone(pacifictz)
+
+
+def write_openrec_usages(worksheet, usages: list):
+    start_cell = 'A1'
+    data = [('Usage_id', 'Computer_id', 'Start_time',
+             'End_time')]
+
+    end_cell_num = 1
+    for i in range(len(usages)):
+        start_time = convert_to_pacific(
+            usages[i].start_timestamp).strftime("%I:%M %p")
+        end_time = convert_to_pacific(
+            usages[i].end_timestamp).strftime("%I:%M %p")
+        data.append([usages[i].id, usages[i].computer_id,
+                    start_time, end_time])
+        end_cell_num += 1
+    end_cell = f'D{end_cell_num}'
+
+    cells = ':'.join((start_cell, end_cell))
+
+    worksheet.update(cells, data)
+    return cells
+
+
+# save_openrec_usages()
+
+
+def save_esports_usages():
+    # Get the days usage and date from database
+    usages, date = get_days_usages()
+
+    items_in_usage = 7
+
+    # If we have no used computers today, do nothing.
+    if len(usages) <= 0:
+        return
+
+    month_day_str = f'{str(date.month)}/{str(date.day)}'
+
+    # Access the google sheet
+    sheet = gsheet.open_by_key(CURRENT_SHEET_ID)
+
+    # Access DSE roster worksheet
+    dse_sheet = sheet.worksheet(title="DSE Roster")
+
+    # Add a new worksheet for the day
+    worksheet = create_sheet(sheet, month_day_str,
+                             len(usages), items_in_usage)
+
+    # Add usages to sheet
+    cells = update_sheet(worksheet, usages, dse_sheet)
+
+    # Format cells
+    format_sheet(worksheet, cells)
+
+
+@apscheduler.task('interval', id='nightly_update', hours=24, start_date='2022-09-6 22:07:00', misfire_grace_time=900)
 # @apscheduler.task('interval', id='nightly_gsheet_update', seconds=30, misfire_grace_time=900)
 def nightly_update():
     """
-    Creates and updates the google sheet every night at 11:55pm for the entries from the last day.
+    Creates and updates the google sheet every night at 11:50pm for the entries from the last day.
     """
     app = apscheduler.app
     with app.app_context():
         print("Started nightly update")
-        # Get the days usage and date from database
-        usages, date = get_days_usages()
-
-        items_in_usage = 7
-
-        # If we have no used computers today, do nothing.
-        if len(usages) <= 0:
-            return
-
-        month_day_str = f'{str(date.month)}/{str(date.day)}'
-
-        # Access the google sheet
-        sheet = gsheet.open_by_key(CURRENT_SHEET_ID)
-
-        # Access DSE roster worksheet
-        dse_sheet = sheet.worksheet(title="DSE Roster")
-
-        # Add a new worksheet for the day
-        worksheet = create_sheet(sheet, month_day_str,
-                                 len(usages), items_in_usage)
-
-        # Add usages to sheet
-        cells = update_sheet(worksheet, usages, dse_sheet)
-
-        # Format cells
-        format_sheet(worksheet, cells)
+        print(datetime.utcnow())
+        openrec_successful = save_openrec_usages()
 
         print("Successfully updated the computer stuff for the night.")
         return "Completed"
