@@ -3,32 +3,91 @@ import { styled } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import Paper from "@mui/material/Paper";
 import Grid from "@mui/material/Unstable_Grid2";
-
-const Item = styled(Paper)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === "dark" ? "#1A2027" : "#fff",
-  ...theme.typography.body2,
-  padding: theme.spacing(1),
-  textAlign: "center",
-  color: theme.palette.text.secondary,
-})); 
+import ComputerButton from "./ComputerButton";
 
 const ComputerLayout = () => {
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Grid container spacing={2}>
-        <Grid xs={8}>
-          <Paper variant="outlined" elevation={3}>
-            Hello
-          </Paper>
+      <Grid container rowSpacing={3} columnSpacing={1}>
+        <Grid xs={12}>
+          <Grid container rowSpacing={1} columns={8}>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xsOffset={2} xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xsOffset={2} xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+          </Grid>
         </Grid>
-        <Grid xs={4}>
-          <Item>xs=4</Item>
-        </Grid>
-        <Grid xs={4}>
-          <Item>xs=4</Item>
-        </Grid>
-        <Grid xs={8}>
-          <Item>xs=8</Item>
+        <Grid xs={12}>
+          <Grid container rowSpacing={1} columns={8}>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xsOffset={2} xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xsOffset={2} xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+            <Grid xs={1}>
+              <ComputerButton></ComputerButton>
+            </Grid>
+          </Grid>
         </Grid>
       </Grid>
     </Box>

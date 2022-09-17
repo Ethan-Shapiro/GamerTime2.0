@@ -8,6 +8,7 @@ from flask_sqlalchemy import SQLAlchemy
 from config import DevelopmentConfig
 from flask_apscheduler import APScheduler
 from flask_httpauth import HTTPTokenAuth
+from flask_cors import CORS
 import os
 
 
@@ -19,6 +20,8 @@ db = SQLAlchemy(session_options={"expire_on_commit": False})
 login_manager = LoginManager()
 apscheduler = APScheduler()
 auth = HTTPTokenAuth
+cors = CORS(resources={r"/*": {"origins": ['*', 'http://localhost:3000'],
+            "allow_headers": "*", "expose_headers": "*"}})
 
 
 def create_app(config_class=DevelopmentConfig):
@@ -45,10 +48,14 @@ def create_app(config_class=DevelopmentConfig):
         apscheduler.init_app(app)
         apscheduler.start()
 
+        # Initialize Cors
+        cors.init_app(app)
+
         # Import parts of our application
         from application.esports import esports_bp
         from application.openrec import openrec_bp
         from application.auth import auth_bp
+        from application.models_routes import models_bp
 
         # from .home import home
         # from .openrec.routes import openrec
@@ -61,5 +68,6 @@ def create_app(config_class=DevelopmentConfig):
         app.register_blueprint(esports_bp)
         app.register_blueprint(openrec_bp)
         app.register_blueprint(auth_bp)
+        app.register_blueprint(models_bp)
 
         return app

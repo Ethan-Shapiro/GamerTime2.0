@@ -1,5 +1,7 @@
+from tkinter import E
 from typing import Tuple
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 from flask import current_app as app
 from application import apscheduler
@@ -78,9 +80,8 @@ class ComputerStatus(db.Model):
         'start_timestamp', db.DateTime)
     email = db.Column('email', db.String)
 
-    def __init__(self, id, usage_id, start_timestamp, email):
-        self.id = id
-        self.usage_id = usage_id
+    def __init__(self, status, start_timestamp, email):
+        self.status = status
         self.start_timestamp = start_timestamp
         self.email = email
 
@@ -137,6 +138,12 @@ def get_pc_status(computer_id: int):
     """
     computer = ComputerStatus.query.filter_by(id=computer_id).first()
     return computer
+
+
+def get_computer_availability():
+    statuses = ComputerStatus.query.order_by(
+        ComputerStatus.start_timestamp.desc()).all()
+    return [c.id for c in statuses]
 
 
 def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
@@ -391,6 +398,25 @@ def query_player(email: str, player_id=None) -> Player:
     return player
 
 
+def create_player(player_dict: dict) -> User:
+    """
+    Returns a newly created user with the given values and adds that user to the database if that user doesn't already exist.
+    Returns None otherwise.
+
+    Parameter(s):
+        user (dict): A user dictionary containing fields for a new user. May or may not containg: role and/or team.
+    """
+    player = Player(**player_dict)
+
+    try:
+        db.session.add(player)
+        db.session.commit()
+    except IntegrityError as ie:
+        db.session.rollback()
+        return False, ie.detail
+    return True, player
+
+
 def create_user(user_dict: dict) -> User:
     """
     Returns a newly created user with the given values and adds that user to the database if that user doesn't already exist.
@@ -439,3 +465,45 @@ def query_usage(usage_id: int):
     """
     usage = Usage.query.filter_by(id=usage_id).first()
     return usage
+
+
+def recreate_computer_statuses():
+    # can't drop if the table doesn't exist yet
+    inspector = inspect(db.engine)
+    try:
+        if inspector.has_table('computer_status') and db.session.query(ComputerStatus).count() != 0:
+            if db.session.query(ComputerStatus).count() != 26:
+                print("incorrect number of rows")
+                return False
+        else:
+            for i in range(26):
+                new_comp_stat = ComputerStatus(0, None, None)
+                db.session.add(new_comp_stat)
+            db.session.commit()
+    except Exception as e:
+        print(e)
+        return False
+    print(db.session.query(ComputerStatus).count())
+    return True
+
+
+def reset_computer_statuses_table():
+    try:
+        computer_statuses = ComputerStatus.query.all()
+        for comp_stat in computer_statuses:
+            setattr(comp_stat, 'status', 0)
+            setattr(comp_stat, 'start_timestamp', None)
+            setattr(comp_stat, 'email', None)
+        db.session.commit()
+    except:
+        return False
+    return True
+
+
+def drop_computer_table():
+    Usage.__table__.drop(db.engine)
+    ComputerStatus.__table__.drop(db.engine)
+
+
+# drop_computer_table()
+# print(ComputerStatus.query.all())

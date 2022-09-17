@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  flask-api:
+    container_name: GamerTimeTest-app
+    restart: always
+    command: flask run --reload
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+    ports:
+      - "5050:5000"
+    volumes:
+      - ./backend:/usr/src/app
+    env_file:
+      - dev.env
+    depends_on:
+      - db
+
+  db:
+    container_name: GamerTimeDB
+    image: postgres:14.5-alpine
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=testing
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
+
+volumes:
+  postgres_data:

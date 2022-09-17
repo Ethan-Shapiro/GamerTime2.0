@@ -22,7 +22,7 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     TESTING = False
-    SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@localhost:5432/postgres"
+    SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@GamerTimeDB:5432/postgres"
 
 
 class TestingConfig(BaseConfig):

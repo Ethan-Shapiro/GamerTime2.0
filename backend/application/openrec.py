@@ -4,7 +4,7 @@ from flask import current_app as app
 from . import ComputerIDIn
 from flask_login import login_required
 from custom_decorators import permissions_required
-from application.models import end_pc_use, set_pc_in_use, reset_pc_statuses, get_db_pc_usages
+from application.models import end_pc_use, set_pc_in_use, reset_pc_statuses, get_db_pc_usages, get_computer_availability
 
 # Configure Blueprint
 openrec_bp = APIBlueprint(
@@ -46,7 +46,7 @@ def get_usages() -> dict:
 
 @openrec_bp.post('/')
 @openrec_bp.input(ComputerIDIn)
-@openrec_bp.output(OpenRecOut, status_code=200)
+@openrec_bp.output(OpenRecOutMsg, status_code=200)
 @login_required
 @permissions_required(['staff', 'admin', 'openrec'])
 def set_usage(data: ComputerIDIn) -> dict:
@@ -62,6 +62,14 @@ def set_usage(data: ComputerIDIn) -> dict:
     # create a new usage using
     success, results = set_pc_in_use(data['computer_id'])
     return {'success': success} | results
+
+
+@openrec_bp.get('/availability')
+@login_required
+@permissions_required(['admin'])
+def get_availability() -> bool:
+    availability = get_computer_availability()
+    return availability
 
 
 @openrec_bp.delete('/<int:computer_id>/<int:usage_id>')

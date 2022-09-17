@@ -1,9 +1,9 @@
 import "./App.css";
 import Grid from "@mui/material/Unstable_Grid2";
 import ComputerLayout from "./components/ComputerLayout";
-import ComputerButton from "./components/ComputerButton";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
+import Queue from "./components/Queue";
 
 const darkTheme = createTheme({
   palette: {
@@ -17,13 +17,14 @@ function App() {
       <ThemeProvider theme={darkTheme}>
         <CssBaseline />
         <body className="App-body">
-          <ComputerButton></ComputerButton>
-          <ComputerButton></ComputerButton>
-          <ComputerButton></ComputerButton>
-          <ComputerButton></ComputerButton>
-          <ComputerButton></ComputerButton>
-          <ComputerButton></ComputerButton>
-          <ComputerButton></ComputerButton>
+          <Grid container columnSpacing={1}>
+            <Grid xs={12} sm={9}>
+              <ComputerLayout></ComputerLayout>
+            </Grid>
+            <Grid xs={12} sm={3}>
+              <Queue></Queue>
+            </Grid>
+          </Grid>
         </body>
       </ThemeProvider>
     </div>
