@@ -2,13 +2,14 @@ import React, { useState } from "react";
 import QueueItem from "./QueueItem";
 import { Stack, Container, TextField, Button } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
+import axios from "axios";
 const Queue = () => {
   const [items, setItems] = useState([
     ["Ethan", 1],
     ["Adeline", 24],
     ["Jack", 11],
   ]);
-  const [name, setName] = useState("");
+  const [firstname, setFirstName] = useState("");
   const [lastname, setLastname] = useState("");
 
   const addToQueue = () => {
@@ -16,7 +17,7 @@ const Queue = () => {
     // server returns the next available pc
     axios
       .post("http://localhost:5050/openrec/queue/", {
-        first_name: 1,
+        first_name: firstname,
         last_name: lastname,
       })
       .then((response) => {
@@ -24,8 +25,8 @@ const Queue = () => {
         const queueID = data["queue_id"];
 
         // success then add item to queue locally
-        setItems([...items, [name, computerID, queueID]]);
-        setName("");
+        setItems([...items, [firstname, 1, queueID]]);
+        setFirstName("");
       })
       .catch((error) => {
         if (error.response) {
@@ -58,9 +59,9 @@ const Queue = () => {
             id="name-input"
             label="Name"
             variant="outlined"
-            value={name}
+            value={firstname}
             onChange={(event) => {
-              setName(event.target.value);
+              setFirstName(event.target.value);
             }}
           />
           <Button variant="contained" onClick={addToQueue}>
