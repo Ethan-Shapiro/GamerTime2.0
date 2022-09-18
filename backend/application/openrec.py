@@ -26,10 +26,21 @@ class OpenRecOutMsg(OpenRecOut):
     message = String()
 
 
+class QueueIn(Schema):
+    first_name = String()
+    last_name = String()
+
+
+class QueueOut(Schema):
+    id = Integer()
+    name = String()
+    success = Boolean()
+
+
 @openrec_bp.get('/')
 @openrec_bp.output(OpenRecOut(many=True), description="A list of computer usages and timestamps.", status_code=200)
-@login_required
-@permissions_required(['staff', 'admin', 'openrec'])
+# @login_required
+# @permissions_required(['staff', 'admin', 'openrec'])
 def get_usages() -> dict:
     """
     Endpoint that returns a list of all current computer usages.
@@ -66,6 +77,8 @@ def set_usage(data: ComputerIDIn) -> dict:
 
 
 @openrec_bp.post('/queue')
+@openrec_bp.input(QueueIn)
+@openrec_bp.output(QueueOut)
 # @login_required
 # @permissions_required(['staff', 'admin', 'openrec'])
 def queue_in(data) -> dict:
@@ -79,11 +92,12 @@ def queue_in(data) -> dict:
         dict: The new usage id and start timestamp (if successful).
     """
     # create a new usage using
-    success, id = add_to_queue(data['computer_id'])
-    return {'success': success, 'queue_id': id}
+    success, queue_data = add_to_queue(data['first_name'], data['last_name'])
+    return {'success': success} | queue_data
 
 
 @openrec_bp.delete('/queue/<int:queue_id>')
+@openrec_bp.output(QueueOut)
 # @login_required
 # @permissions_required(['staff', 'admin', 'openrec'])
 def queue_out(queue_id: int) -> dict:
@@ -102,8 +116,8 @@ def queue_out(queue_id: int) -> dict:
 
 
 @openrec_bp.get('/availability')
-@login_required
-@permissions_required(['admin'])
+# @login_required
+# @permissions_required(['admin'])
 def get_availability() -> bool:
     availability = get_computer_availability()
     return availability

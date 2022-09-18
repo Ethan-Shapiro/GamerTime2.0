@@ -4,7 +4,7 @@ import "./ComputerButton.css";
 import Overlay from "./Overlay";
 import axios from "axios";
 
-const ComputerButton = ({ ID }) => {
+const ComputerButton = ({ ID, data }) => {
   const openOverlay = () => {
     setOpen(true);
     if (status === 0) {

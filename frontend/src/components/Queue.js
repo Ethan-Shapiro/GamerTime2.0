@@ -4,11 +4,7 @@ import { Stack, Container, TextField, Button } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import axios from "axios";
 const Queue = () => {
-  const [items, setItems] = useState([
-    ["Ethan", 1],
-    ["Adeline", 24],
-    ["Jack", 11],
-  ]);
+  const [items, setItems] = useState([]);
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastname] = useState("");
 
@@ -16,17 +12,41 @@ const Queue = () => {
     // TODO request to add to server
     // server returns the next available pc
     axios
-      .post("http://localhost:5050/openrec/queue/", {
-        first_name: firstname,
-        last_name: lastname,
-      })
+      .get("http://localhost:5050/openrec/availability")
       .then((response) => {
-        const data = response.data;
-        const queueID = data["queue_id"];
+        const nextAvailableIDs = response.data;
 
-        // success then add item to queue locally
-        setItems([...items, [firstname, 1, queueID]]);
-        setFirstName("");
+        axios
+          .post("http://localhost:5050/openrec/queue", {
+            first_name: firstname,
+            last_name: lastname,
+          })
+          .then((response) => {
+            const data = response.data;
+            const name = data["name"];
+            const queueID = data["id"];
+
+            // success then add item to queue locally
+            const newItems = [];
+            for (let i = 0; i < items.length; i++) {
+              newItems.push([items[i][0], nextAvailableIDs[i], items[i][2]]);
+            }
+            setItems([
+              ...newItems,
+              [
+                name,
+                nextAvailableIDs[items.length === 0 ? 0 : items.length],
+                queueID,
+              ],
+            ]);
+            setFirstName("");
+            setLastname("");
+          })
+          .catch((error) => {
+            if (error.response) {
+              console.log(error.response);
+            }
+          });
       })
       .catch((error) => {
         if (error.response) {
@@ -37,8 +57,40 @@ const Queue = () => {
 
   const removeFromQueue = (itemID) => {
     // TODO request to remove item from server
-    // success then remove item from queue locally
-    setItems(items.filter((item, i) => i !== itemID));
+    axios
+      .get("http://localhost:5050/openrec/availability")
+      .then((response) => {
+        const nextAvailableIDs = response.data;
+
+        axios
+          .delete(`http://localhost:5050/openrec/queue/${itemID}`)
+          .then((response) => {
+            const data = response.data;
+
+            const newItems = items.filter((item, i) => item[2] !== itemID);
+
+            for (let i = 0; i < newItems.length; i++) {
+              newItems[i] = [
+                newItems[i][0],
+                nextAvailableIDs[i],
+                newItems[i][2],
+              ];
+            }
+
+            // success then remove item from queue locally
+            setItems(newItems);
+          })
+          .catch((error) => {
+            if (error.response) {
+              console.log(error.response);
+            }
+          });
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response);
+        }
+      });
   };
 
   return (
@@ -54,16 +106,33 @@ const Queue = () => {
       </Grid>
       <Container>
         <Stack sx={{ my: 1 }}>
-          <TextField
-            required
-            id="name-input"
-            label="Name"
-            variant="outlined"
-            value={firstname}
-            onChange={(event) => {
-              setFirstName(event.target.value);
-            }}
-          />
+          <Grid container>
+            <Grid xs={6}>
+              <TextField
+                required
+                id="firstname-input"
+                label="First"
+                variant="outlined"
+                value={firstname}
+                onChange={(event) => {
+                  setFirstName(event.target.value);
+                }}
+              />
+            </Grid>
+            <Grid xs={6}>
+              <TextField
+                required
+                id="lastname-input"
+                label="Last"
+                variant="outlined"
+                value={lastname}
+                onChange={(event) => {
+                  setLastname(event.target.value);
+                }}
+              />
+            </Grid>
+          </Grid>
+
           <Button variant="contained" onClick={addToQueue}>
             Add to Queue
           </Button>
@@ -75,7 +144,7 @@ const Queue = () => {
             name={item[0]}
             computerID={item[1]}
             key={i}
-            itemID={i}
+            itemID={item[2]}
             deleteFunc={removeFromQueue}
           ></QueueItem>
         ))}

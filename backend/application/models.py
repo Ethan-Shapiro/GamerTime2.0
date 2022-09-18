@@ -526,14 +526,14 @@ def drop_computer_table():
 
 
 def add_to_queue(first, last):
-    combined_name = first + + ' ' + last[0] + '.'
+    combined_name = first + ' ' + last[0] + '.'
     try:
         new_queue_item = Queue(name=combined_name)
         db.session.add(new_queue_item)
         db.session.commit()
     except:
         return False
-    return True, new_queue_item.id
+    return True, {'id': new_queue_item.id, 'name': new_queue_item.name}
 
 
 def remove_from_queue(queue_id):
