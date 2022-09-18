@@ -9,15 +9,29 @@ const Queue = () => {
     ["Jack", 11],
   ]);
   const [name, setName] = useState("");
+  const [lastname, setLastname] = useState("");
 
   const addToQueue = () => {
     // TODO request to add to server
     // server returns the next available pc
-    const computerID = 1;
+    axios
+      .post("http://localhost:5050/openrec/queue/", {
+        first_name: 1,
+        last_name: lastname,
+      })
+      .then((response) => {
+        const data = response.data;
+        const queueID = data["queue_id"];
 
-    // success then add item to queue locally
-    setItems([...items, [name, computerID]]);
-    setName("");
+        // success then add item to queue locally
+        setItems([...items, [name, computerID, queueID]]);
+        setName("");
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response);
+        }
+      });
   };
 
   const removeFromQueue = (itemID) => {

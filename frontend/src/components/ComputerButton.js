@@ -6,79 +6,90 @@ import axios from "axios";
 
 const ComputerButton = ({ ID }) => {
   const openOverlay = () => {
-    if (backgroundColor === "grey") {
+    setOpen(true);
+    if (status === 0) {
       // open the not in use overlay
-      setOpen(true);
-      setBackgroundColor("grey");
+      setOverlayBtn1("Start");
     } else if (backgroundColor === "red") {
       // open enable pc overlay
       setBackgroundColor("red");
-    } else if (backgroundColor === "green") {
+    } else if (status > 0) {
       // open end use overlay
-      setBackgroundColor("green");
+      setOverlayBtn1("End");
     }
   };
+
+  const handleInUseData = (data) => {
+    const startTimestamp = data["start_timestamp"];
+    const startTimestampMS = parseInt(startTimestamp) * 1000;
+    setTimestampMS(startTimestampMS);
+    setStatus(data["status"]);
+    setBackgroundColor("green");
+  };
+
+  const handleStop = () => {
+    setTimestampMS("");
+    setStatus(0);
+    setBackgroundColor("grey");
+  };
+
   const [backgroundColor, setBackgroundColor] = useState("grey");
   const [open, setOpen] = useState(false);
   const [overlayResponse, setOverlayResponse] = useState(false);
-
-  const fetchTest = async () => {
-    const response = await fetch("http://localhost:5050/openrec", {
-      method: "get",
-      mode: "cors",
-    });
-    console.log(response.json());
-  };
-
-  const setInUse = () => {
-    axios
-      .get("http://localhost:5050/openrec", { computer_id: ID })
-      .then((response) => {
-        const data = response.data.data;
-        if (data["success"]) {
-          // add items to session
-        }
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log(error.response);
-        }
-      });
-  };
-
-  const stopUse = () => {
-    axios
-      .get("http://localhost:5050/openrec", { computer_id: ID })
-      .then((response) => {
-        const data = response.data.data;
-        if (data["success"]) {
-          // add items to session
-        }
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log(error.response);
-        }
-      });
-  };
+  const [status, setStatus] = useState(0);
+  const [timestampMS, setTimestampMS] = useState("");
+  const [overlayBtn1, setOverlayBtn1] = useState("");
 
   useEffect(() => {
-    // if the overlay response is false, do nothing
-    if (!overlayResponse) {
-      return;
-    }
-    if (backgroundColor === "grey") {
-      console.log("We're making our request!");
+    const setInUse = () => {
+      axios
+        .post("http://localhost:5050/openrec/", { computer_id: 1 })
+        .then((response) => {
+          const data = response.data;
+          if (data["success"]) {
+            handleInUseData(data);
+          }
+        })
+        .catch((error) => {
+          if (error.response) {
+            console.log(error.response);
+          }
+        });
+    };
+
+    const stopUse = () => {
+      axios
+        .delete(`http://localhost:5050/openrec/${ID}/${status}`)
+        .then((response) => {
+          const data = response.data;
+          console.log(data);
+          if (data["success"]) {
+            handleStop();
+          } else if (data["status"] > 0) {
+            handleInUseData(data);
+          }
+        })
+        .catch((error) => {
+          if (error.response) {
+            console.log(error.response);
+          }
+        });
+    };
+
+    if (!overlayResponse) return;
+    if (status === 0) {
+      // open the not in use overlay
       setInUse();
-    } else if (backgroundColor === "red") {
+    } else if (status === -1) {
       // open enable pc overlay
       setBackgroundColor("red");
-    } else if (backgroundColor === "green") {
+    } else if (status > 0) {
       // open end use overlay
       stopUse();
-      setBackgroundColor("green");
     }
-  }, [overlayResponse, backgroundColor]);
+    setOpen(false);
+    setOverlayResponse(false);
+  }, [ID, overlayResponse, status]);
 
   return (
     <Paper
@@ -93,6 +104,8 @@ const ComputerButton = ({ ID }) => {
         open={open}
         setOpen={setOpen}
         setOverlayResponse={setOverlayResponse}
+        startTimestampMS={timestampMS}
+        btn1Text={overlayBtn1}
       ></Overlay>
       <Button onClick={openOverlay}>
         <Box

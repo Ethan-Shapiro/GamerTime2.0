@@ -126,6 +126,14 @@ class Player(db.Model):
         self.team = team
 
 
+class Queue(db.Model):
+    """
+    Loads existing Player table from PostgreSQL
+    """
+    id = db.Column('id', db.Integer, primary_key=True)
+    name = db.Column('name', db.String)
+
+
 def valid_ucsd_email(email):
     pattern = re.compile('^[A-Za-z0-9]*@ucsd\.edu$')
     return re.fullmatch(pattern, email)
@@ -163,6 +171,11 @@ def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
 
     if computer.status == DISABLED_STATUS_CODE:
         return False, {'message': f"Computer at {computer_id} is disabled."}
+
+    if computer.status >= IN_USE_STATUS_CODE:
+        return True, {'message': f"A different use was started here!", "id": 1,
+                      "start_timestamp": str(computer.timestamp.timestamp()),
+                      "status": computer.status}
 
     # If there is an email provided, we are in esports and don't have a timer
     if email:
@@ -203,7 +216,7 @@ def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
                 'email': email}
     else:
         body = {'id': computer_id, 'status': new_usage.id,
-                'start_timestamp_seconds': start_timestamp_seconds}
+                'start_timestamp': start_timestamp_seconds}
 
     if not worked:
         return False,
@@ -287,7 +300,7 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
     else:
         body = {'id': computer_id,
                 'status': 0,
-                'start_timestamp_seconds': '',
+                'start_timestamp': '',
                 "message": ""}
 
     if computer.status == DISABLED_STATUS_CODE:
@@ -302,7 +315,7 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
         if esports:
             body['email'] = computer.email
         else:
-            body['start_timestamp_seconds'] = computer.start_timestamp
+            body['start_timestamp'] = computer.start_timestamp
         return False, body
 
     app = apscheduler.app
@@ -314,10 +327,13 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
             return False, body
 
         if not scheduled:
-            # Need to remove scheduled end or else we will error
-            job_id = f'auto_end_{usage_id}'
-            apscheduler.remove_job(job_id)
-            print("Successfully ended scheduled session")
+            try:
+                # Need to remove scheduled end or else we will error
+                job_id = f'auto_end_{usage_id}'
+                apscheduler.remove_job(job_id)
+                print("Successfully ended scheduled session")
+            except:
+                print("Couldn't find scheduled session end")
         body['message'] = f'Successfully ended session at: {computer_id}.'
         return True, body
 
@@ -345,7 +361,11 @@ def get_db_pc_usages(esports=False):
         usages = ComputerStatus.query.filter(ComputerStatus.status != 0).with_entities(
             ComputerStatus.id, ComputerStatus.status, ComputerStatus.start_timestamp
         ).order_by(ComputerStatus.id).all()
-    return [dict(x) for x in usages]
+    usages = [dict(x) for x in usages]
+    for usage in usages:
+        usage['start_timestamp'] = str(usage['start_timestamp'].timestamp())
+        print(usage)
+    return usages
 
 
 def get_openrec_days_usages():
@@ -505,5 +525,26 @@ def drop_computer_table():
     ComputerStatus.__table__.drop(db.engine)
 
 
+def add_to_queue(first, last):
+    combined_name = first + + ' ' + last[0] + '.'
+    try:
+        new_queue_item = Queue(name=combined_name)
+        db.session.add(new_queue_item)
+        db.session.commit()
+    except:
+        return False
+    return True, new_queue_item.id
+
+
+def remove_from_queue(queue_id):
+    try:
+        Queue.query.filter_by(id=queue_id).delete()
+        db.session.commit()
+    except:
+        return False
+    return True
+
+
 # drop_computer_table()
 # print(ComputerStatus.query.all())
+# print(User.query.all())

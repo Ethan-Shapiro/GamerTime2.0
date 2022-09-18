@@ -11,82 +11,40 @@ const ComputerLayout = () => {
       <Grid container rowSpacing={3} columnSpacing={1}>
         <Grid xs={12}>
           <Grid container rowSpacing={1} columns={8}>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xsOffset={2} xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xsOffset={2} xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
+            {Array.apply(null, Array(12)).map((x, i) => {
+              if (i + 1 === 2 || i + 1 === 8) {
+                return (
+                  <Grid xsOffset={2} xs={1}>
+                    <ComputerButton ID={i + 1}></ComputerButton>
+                  </Grid>
+                );
+              } else {
+                return (
+                  <Grid xs={1}>
+                    <ComputerButton ID={i + 1}></ComputerButton>
+                  </Grid>
+                );
+              }
+            })}
           </Grid>
         </Grid>
         <Grid xs={12}>
           <Grid container rowSpacing={1} columns={8}>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xsOffset={2} xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xsOffset={2} xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
-            <Grid xs={1}>
-              <ComputerButton></ComputerButton>
-            </Grid>
+            {Array.apply(null, Array(14)).map((x, i) => {
+              if (i + 1 === 2 || i + 1 === 9) {
+                return (
+                  <Grid xsOffset={1} xs={1}>
+                    <ComputerButton ID={i + 1 + 12}></ComputerButton>
+                  </Grid>
+                );
+              } else {
+                return (
+                  <Grid xs={1}>
+                    <ComputerButton ID={i + 1 + 12}></ComputerButton>
+                  </Grid>
+                );
+              }
+            })}
           </Grid>
         </Grid>
       </Grid>
