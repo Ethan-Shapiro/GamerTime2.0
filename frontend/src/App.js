@@ -4,6 +4,7 @@ import ComputerLayout from "./components/ComputerLayout";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Queue from "./components/Queue";
+import Navbar from "./components/Navbar";
 
 const darkTheme = createTheme({
   palette: {
@@ -17,6 +18,7 @@ function App() {
       <ThemeProvider theme={darkTheme}>
         <CssBaseline />
         <body className="App-body">
+          <Navbar navbarLabel="Home"></Navbar>
           <Grid container columnSpacing={1}>
             <Grid xs={12} sm={9}>
               <ComputerLayout></ComputerLayout>

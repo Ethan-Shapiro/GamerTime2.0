@@ -7,7 +7,9 @@ from apiflask.fields import String, Boolean
 from flask import current_app as app
 from application.models import query_user, create_user
 from flask_login import login_user, current_user, logout_user, login_required
-from custom_decorators import permissions_required
+from custom_decorators import perms_required
+from flask_jwt_extended import jwt_required, create_access_token
+from flask_jwt_extended import get_jwt
 
 # Configure Blueprint
 auth_bp = APIBlueprint(
@@ -27,9 +29,13 @@ class AuthOut(Schema):
     message = String()
 
 
+class LoginOut(AuthOut):
+    access_token = String()
+
+
 @auth_bp.post('/login')
 @auth_bp.input(AuthIn)
-@auth_bp.output(AuthOut)
+@auth_bp.output(LoginOut)
 def login_page(data) -> Tuple[bool, str]:
     """Attempts to login a user with the given credentials.
 
@@ -39,29 +45,31 @@ def login_page(data) -> Tuple[bool, str]:
     Returns:
         Tuple[bool, str]: A success boolean and a message.
     """
-    if current_user.is_authenticated:
-        return {'success': False, 'message': 'User already logged in!'}
-
     email = data['email']
     password = data['password']
 
     # Query database for email
     user = query_user(email)
     if user and is_correct_password(user.salt, user.password, password):
-        login_user(user, remember=False)
-        return {'success': True, 'message': 'User logged in!'}
+        # login_user(user, remember=False)
+        access_token = create_access_token(identity=email, additional_claims={
+                                           'permission': user.permissions})
+        return {'success': True, 'message': 'User logged in!', 'access_token': access_token}
+
     return {'success': False, 'message': 'Incorrect credentials!'}
 
 
 @auth_bp.route('/logout')
 @auth_bp.output(AuthOut)
-@login_required
+@jwt_required()
+@perms_required('admin')
 def logout() -> Tuple[bool, str]:
     """Endpoint that logs out the current logged in user.
 
     Returns:
         Tuple[bool, str]: A success boolean and a message.
     """
+    print(get_jwt())
     try:
         result = logout_user()
     except:
@@ -75,8 +83,8 @@ def logout() -> Tuple[bool, str]:
                location='json'
                )
 @auth_bp.output(AuthOut)
-@login_required
-@permissions_required(['admin'])
+@jwt_required()
+@perms_required('admin')
 def register_page(data) -> Tuple[bool, str]:
     """Endpoint that creates a new user on the database.
 

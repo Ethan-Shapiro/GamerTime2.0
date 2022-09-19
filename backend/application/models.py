@@ -150,7 +150,7 @@ def get_pc_status(computer_id: int):
 
 def get_computer_availability():
     statuses = ComputerStatus.query.order_by(
-        ComputerStatus.start_timestamp.desc()).all()
+        ComputerStatus.start_timestamp.desc(), ComputerStatus.id).all()
     return [c.id for c in statuses]
 
 
@@ -174,7 +174,7 @@ def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
 
     if computer.status >= IN_USE_STATUS_CODE:
         return True, {'message': f"A different use was started here!", "id": 1,
-                      "start_timestamp": str(computer.timestamp.timestamp()),
+                      "start_timestamp": str(computer.start_timestamp.timestamp()),
                       "status": computer.status}
 
     # If there is an email provided, we are in esports and don't have a timer
@@ -525,13 +525,21 @@ def drop_computer_table():
     ComputerStatus.__table__.drop(db.engine)
 
 
+def get_queue():
+    queue_items = Queue.query.order_by(Queue.id).all()
+    return [{'id': q.id, 'name': q.name} for q in queue_items]
+
+
 def add_to_queue(first, last):
+    if not first or not last:
+        return False, {'message': 'No names to add.'}
     combined_name = first + ' ' + last[0] + '.'
     try:
         new_queue_item = Queue(name=combined_name)
         db.session.add(new_queue_item)
         db.session.commit()
-    except:
+    except Exception as e:
+        print(e)
         return False
     return True, {'id': new_queue_item.id, 'name': new_queue_item.name}
 
@@ -545,6 +553,7 @@ def remove_from_queue(queue_id):
     return True
 
 
+# Queue.__table__.drop(db.engine)
 # drop_computer_table()
 # print(ComputerStatus.query.all())
 # print(User.query.all())

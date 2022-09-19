@@ -10,8 +10,8 @@ const Overlay = ({
 }) => {
   const [counter, setCounter] = useState("0h 0m 0s");
 
-  useEffect(() => {
-    if (startTimestampMS === "" || !open) return;
+  const updateCounter = () => {
+    if (startTimestampMS === "") return;
     const now = Date.now();
 
     // Find the distance between now and the count down date
@@ -26,8 +26,22 @@ const Overlay = ({
 
     // Display the result in the element with id="overlayTimer"
     const timeString = hours + "h " + minutes + "m " + seconds + "s";
-    setTimeout(() => setCounter(timeString), 1000);
-  }, [open, counter, startTimestampMS]);
+    setCounter(timeString);
+  };
+
+  // initial update of counter so it doesn't lag
+  useEffect(() => {
+    if (!open) {
+      setCounter("0h 0m 0s");
+      return;
+    }
+    updateCounter();
+  }, [open]);
+
+  useEffect(() => {
+    if (startTimestampMS === "" || !open) return;
+    setTimeout(updateCounter, 1000);
+  }, [counter]);
 
   const handleClose = () => {
     setOpen(false);

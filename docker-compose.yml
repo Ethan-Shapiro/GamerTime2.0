@@ -28,6 +28,23 @@ services:
       - POSTGRES_USER=testing
       - POSTGRES_PASSWORD=password
       - POSTGRES_DB=postgres
+    
+  client:
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    command: ["npm", "start"]
+    volumes:
+      - ./frontend:/frontend
+      - node-modules:/frontend/node_modules
+    environment:
+      - NODE_ENV=development
+    ports:
+      - '3000:3000'
+    depends_on:
+      - flask-api
+
 
 volumes:
   postgres_data:
+  node-modules:

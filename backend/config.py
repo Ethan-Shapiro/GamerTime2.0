@@ -22,6 +22,9 @@ class DevelopmentConfig(BaseConfig):
     DEBUG = True
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     TESTING = False
+    JWT_TOKEN_LOCATION = ["headers"]
+    JWT_COOKIE_SECURE = False
+    JWT_SECRET_KEY = "super-secret"
     SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@GamerTimeDB:5432/postgres"
 
 

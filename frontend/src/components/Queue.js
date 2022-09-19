@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import QueueItem from "./QueueItem";
 import { Stack, Container, TextField, Button } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
@@ -8,21 +8,72 @@ const Queue = () => {
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastname] = useState("");
 
-  const addToQueue = () => {
-    // TODO request to add to server
-    // server returns the next available pc
+  // Load initial queue items
+  useEffect(() => {
     axios
       .get("http://localhost:5050/openrec/availability")
       .then((response) => {
         const nextAvailableIDs = response.data;
 
         axios
-          .post("http://localhost:5050/openrec/queue", {
-            first_name: firstname,
-            last_name: lastname,
-          })
+          .get("http://localhost:5050/openrec/queue")
           .then((response) => {
             const data = response.data;
+
+            // success then add item to queue locally
+            const newItems = [];
+            for (let i = 0; i < data.length; i++) {
+              newItems.push([
+                data[i]["name"],
+                nextAvailableIDs[i],
+                data[i]["id"],
+              ]);
+            }
+            setItems(newItems);
+            setFirstName("");
+            setLastname("");
+          })
+          .catch((error) => {
+            if (error.response) {
+              console.log(error.response);
+            }
+          });
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response);
+        }
+      });
+  }, []);
+
+  const addToQueue = () => {
+    // TODO request to add to server
+    // server returns the next available pc
+    axios
+      .get("http://localhost:5050/openrec/availability", {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("jwt"),
+        },
+      })
+      .then((response) => {
+        const nextAvailableIDs = response.data;
+
+        axios
+          .post(
+            "http://localhost:5050/openrec/queue",
+            {
+              first_name: firstname,
+              last_name: lastname,
+            },
+            {
+              headers: {
+                Authorization: "Bearer " + localStorage.getItem("jwt"),
+              },
+            }
+          )
+          .then((response) => {
+            const data = response.data;
+            if (!data["success"]) return;
             const name = data["name"];
             const queueID = data["id"];
 
@@ -58,14 +109,23 @@ const Queue = () => {
   const removeFromQueue = (itemID) => {
     // TODO request to remove item from server
     axios
-      .get("http://localhost:5050/openrec/availability")
+      .get("http://localhost:5050/openrec/availability", {
+        headers: {
+          Authorization: "Bearer " + localStorage.getItem("jwt"),
+        },
+      })
       .then((response) => {
         const nextAvailableIDs = response.data;
 
         axios
-          .delete(`http://localhost:5050/openrec/queue/${itemID}`)
+          .delete(`http://localhost:5050/openrec/queue/${itemID}`, {
+            headers: {
+              Authorization: "Bearer " + localStorage.getItem("jwt"),
+            },
+          })
           .then((response) => {
             const data = response.data;
+            if (!data["success"]) return;
 
             const newItems = items.filter((item, i) => item[2] !== itemID);
 

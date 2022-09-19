@@ -9,6 +9,7 @@ from config import DevelopmentConfig
 from flask_apscheduler import APScheduler
 from flask_httpauth import HTTPTokenAuth
 from flask_cors import CORS
+from flask_jwt_extended import JWTManager
 import os
 
 
@@ -19,7 +20,8 @@ class ComputerIDIn(Schema):
 db = SQLAlchemy(session_options={"expire_on_commit": False})
 login_manager = LoginManager()
 apscheduler = APScheduler()
-auth = HTTPTokenAuth
+auth = HTTPTokenAuth()
+jwt = JWTManager()
 cors = CORS(resources={r"/*": {"origins": ['*', 'http://localhost:3000'],
             "allow_headers": "*", "expose_headers": "*"}})
 
@@ -50,6 +52,9 @@ def create_app(config_class=DevelopmentConfig):
 
         # Initialize Cors
         cors.init_app(app)
+
+        # Initialize JWT
+        jwt.init_app(app)
 
         # Import parts of our application
         from application.esports import esports_bp
