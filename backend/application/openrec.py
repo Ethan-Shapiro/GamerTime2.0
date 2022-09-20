@@ -11,7 +11,7 @@ from flask_cors import CORS
 openrec_bp = APIBlueprint(
     name='openrec',
     import_name=__name__,
-    url_prefix='/openrec'
+    url_prefix='/api/openrec'
 )
 
 

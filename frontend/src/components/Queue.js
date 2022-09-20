@@ -11,12 +11,12 @@ const Queue = () => {
   // Load initial queue items
   useEffect(() => {
     axios
-      .get("http://localhost:5000/openrec/availability")
+      .get("/api/openrec/availability")
       .then((response) => {
         const nextAvailableIDs = response.data;
 
         axios
-          .get("http://localhost:5000/openrec/queue")
+          .get("/api/openrec/queue")
           .then((response) => {
             const data = response.data;
 
@@ -50,7 +50,7 @@ const Queue = () => {
     // TODO request to add to server
     // server returns the next available pc
     axios
-      .get("http://localhost:5000/openrec/availability", {
+      .get("/api/openrec/availability", {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },
@@ -60,7 +60,7 @@ const Queue = () => {
 
         axios
           .post(
-            "http://localhost:5000/openrec/queue",
+            "/api/openrec/queue",
             {
               first_name: firstname,
               last_name: lastname,
@@ -109,7 +109,7 @@ const Queue = () => {
   const removeFromQueue = (itemID) => {
     // TODO request to remove item from server
     axios
-      .get("http://localhost:5000/openrec/availability", {
+      .get("/api/openrec/availability", {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },
@@ -118,7 +118,7 @@ const Queue = () => {
         const nextAvailableIDs = response.data;
 
         axios
-          .delete(`http://localhost:5000/openrec/queue/${itemID}`, {
+          .delete(`/api/openrec/queue/${itemID}`, {
             headers: {
               Authorization: "Bearer " + localStorage.getItem("jwt"),
             },

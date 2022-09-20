@@ -25,7 +25,8 @@ class DevelopmentConfig(BaseConfig):
     JWT_TOKEN_LOCATION = ["headers"]
     JWT_COOKIE_SECURE = False
     JWT_SECRET_KEY = "super-secret"
-    SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@GamerTimeDB:5432/postgres"
+    # SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@GamerTimeDB:5432/postgres"
+    SQLALCHEMY_DATABASE_URI = "postgresql://postgres:GTime@ucsd19@/postgres?host=/cloudsql/gamertime-363018:us-west1:gamertimedb"
 
 
 class TestingConfig(BaseConfig):

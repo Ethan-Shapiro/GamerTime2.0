@@ -15,7 +15,7 @@ from flask_jwt_extended import get_jwt
 auth_bp = APIBlueprint(
     name='auth',
     import_name=__name__,
-    url_prefix='/auth'
+    url_prefix='/api/auth'
 )
 
 

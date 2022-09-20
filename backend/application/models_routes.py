@@ -10,7 +10,7 @@ from application.models import create_player, recreate_computer_statuses, reset_
 models_bp = APIBlueprint(
     name='models',
     import_name=__name__,
-    url_prefix='/models'
+    url_prefix='/api/models'
 )
 
 

@@ -40,7 +40,7 @@ const LoginOverlay = () => {
 
   const attemptSignOut = () => {
     axios
-      .get("http://localhost:5000/auth/logout", {
+      .get("/api/auth/logout", {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },
@@ -61,7 +61,7 @@ const LoginOverlay = () => {
 
   const attemptLogin = () => {
     axios
-      .post("http://localhost:5000/auth/login", {
+      .post("/api/auth/login", {
         email: email,
         password: password,
       })

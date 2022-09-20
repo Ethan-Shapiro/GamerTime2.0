@@ -62,7 +62,7 @@ const ComputerButton = ({ ID, initData }) => {
   const setInUse = () => {
     axios
       .post(
-        "http://localhost:5000/openrec/",
+        "/api/openrec/",
         { computer_id: ID },
         {
           headers: {
@@ -85,7 +85,7 @@ const ComputerButton = ({ ID, initData }) => {
 
   const stopUse = () => {
     axios
-      .delete(`http://localhost:5000/openrec/${ID}/${status}`, {
+      .delete(`/api/openrec/${ID}/${status}`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },

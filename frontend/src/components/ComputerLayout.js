@@ -10,7 +10,7 @@ const ComputerLayout = () => {
   const [initialData, setInitialData] = useState({});
   useEffect(() => {
     axios
-      .get(`http://localhost:5000/openrec/`, {
+      .get(`/api/openrec/`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },

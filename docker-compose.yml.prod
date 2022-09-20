@@ -10,7 +10,22 @@ services:
     image: flask-api-gunicorn
     volumes:
       - ./backend:/backend
+    env_file:
+      - dev.env
+    depends_on:
+      - db
 
+  db:
+    container_name: GamerTimeDB
+    image: postgres:14.5-alpine
+    ports:
+      - '5433:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=testing
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=postgres
   frontend:
     build:
       context: ./frontend/
