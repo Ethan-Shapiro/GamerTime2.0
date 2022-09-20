@@ -229,7 +229,7 @@ def save_esports_usages():
     format_sheet(worksheet, cells)
 
 
-@apscheduler.task('interval', id='nightly_update', hours=24, start_date='2022-09-6 22:07:00', misfire_grace_time=900)
+# @apscheduler.task('interval', id='nightly_update', hours=24, start_date='2022-09-6 22:07:00', misfire_grace_time=900)
 # @apscheduler.task('interval', id='nightly_gsheet_update', seconds=30, misfire_grace_time=900)
 def nightly_update():
     """
