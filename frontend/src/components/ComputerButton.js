@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Paper, Box, Button } from "@mui/material";
+import { Paper, Box, Button, Typography } from "@mui/material";
+import Grid from "@mui/material/Unstable_Grid2";
 import "./ComputerButton.css";
 import Overlay from "./Overlay";
 import axios from "axios";
 
-const ComputerButton = ({ ID, initData }) => {
+const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
   const [backgroundColor, setBackgroundColor] = useState("grey");
   const [open, setOpen] = useState(false);
   const [overlayResponse, setOverlayResponse] = useState(false);
@@ -12,6 +13,47 @@ const ComputerButton = ({ ID, initData }) => {
   const [timestampMS, setTimestampMS] = useState("");
   const [overlayBtn1, setOverlayBtn1] = useState("");
   const [initialized, setInitialized] = useState(false);
+  const [counter, setCounter] = useState("0h 0m 0s");
+  const [hoursElapsed, setHoursElapsed] = useState(0);
+
+  const updateCounter = (timestamp = null) => {
+    if (timestampMS === "" && timestamp === null) return;
+    const now = Date.now();
+
+    // Find the distance between now and the count down date
+    const timeElapsed = now - timestampMS;
+
+    // Time calculations for days, hours, minutes and seconds
+    var hours = Math.floor(
+      (timeElapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+    var minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
+
+    if (hoursElapsed !== hours) {
+      setHoursElapsed(hours);
+    }
+
+    // Display the result in the element with id="overlayTimer"
+    const timeString = hours + "h " + minutes + "m " + seconds + "s";
+    setCounter(timeString);
+  };
+
+  // Updates the color of the computer button as the person is there for longer
+  useEffect(() => {
+    if (hoursElapsed >= 5) {
+      setBackgroundColor("red");
+    } else if (hoursElapsed >= 4) {
+      setBackgroundColor("orange");
+    } else if (hoursElapsed >= 2) {
+      setBackgroundColor("yellow");
+    }
+  }, [hoursElapsed]);
+
+  useEffect(() => {
+    if (timestampMS === "") return;
+    setTimeout(updateCounter, 1000);
+  }, [counter]);
 
   useEffect(() => {
     if (initData === null || initialized) return;
@@ -38,7 +80,7 @@ const ComputerButton = ({ ID, initData }) => {
     const startTimestampMS = parseInt(startTimestamp) * 1000;
     setTimestampMS(startTimestampMS);
     setStatus(data["status"]);
-    console.log("here");
+    updateCounter(startTimestampMS);
   };
 
   useEffect(() => {
@@ -52,17 +94,21 @@ const ComputerButton = ({ ID, initData }) => {
       // open end use overlay
       setBackgroundColor("green");
     }
+    setCompStatusChange(true);
   }, [status]);
 
   const handleStop = () => {
     setTimestampMS("");
     setStatus(0);
+    setTimeout(() => {
+      setCounter("0h 0m 0s");
+    }, 500);
   };
 
   const setInUse = () => {
     axios
       .post(
-        "http://localhost:5050/openrec/",
+        "/api/openrec/",
         { computer_id: ID },
         {
           headers: {
@@ -85,7 +131,7 @@ const ComputerButton = ({ ID, initData }) => {
 
   const stopUse = () => {
     axios
-      .delete(`http://localhost:5050/openrec/${ID}/${status}`, {
+      .delete(`/api/openrec/${ID}/${status}`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },
@@ -139,8 +185,35 @@ const ComputerButton = ({ ID, initData }) => {
         setOverlayResponse={setOverlayResponse}
         startTimestampMS={timestampMS}
         btn1Text={overlayBtn1}
+        counter={counter}
       ></Overlay>
-      <Button onClick={openOverlay}>
+      <Button sx={{ position: "relative" }} onClick={openOverlay}>
+        <div
+          style={{
+            position: "absolute",
+            color: "black",
+            fontSize: "1.1vw",
+            textTransform: "lowercase",
+            top: "-5%",
+            left: "25%",
+            transform: "translateX(-30%)",
+          }}
+        >
+          {counter}
+        </div>
+        <div
+          style={{
+            position: "absolute",
+            color: "black",
+            textTransform: "lowercase",
+            fontSize: "1.1vw",
+            top: "-5%",
+            left: "90%",
+            transform: "translateX(-30%)",
+          }}
+        >
+          {ID}
+        </div>
         <Box
           component="img"
           sx={{ height: "80%", width: "80%" }}

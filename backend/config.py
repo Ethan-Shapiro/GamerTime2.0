@@ -1,6 +1,7 @@
 import os
 from typing import List, Type
 from dotenv import load_dotenv
+from datetime import timedelta
 
 load_dotenv()
 
@@ -24,6 +25,7 @@ class DevelopmentConfig(BaseConfig):
     TESTING = False
     JWT_TOKEN_LOCATION = ["headers"]
     JWT_COOKIE_SECURE = False
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=8)
     JWT_SECRET_KEY = "super-secret"
     SQLALCHEMY_DATABASE_URI = "postgresql://testing:password@GamerTimeDB:5432/postgres"
 

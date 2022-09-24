@@ -5,13 +5,12 @@ from . import ComputerIDIn
 from custom_decorators import perms_required
 from flask_jwt_extended import jwt_required
 from application.models import end_pc_use, set_pc_in_use, get_queue, add_to_queue, remove_from_queue, get_db_pc_usages, get_computer_availability
-from flask_cors import CORS
 
 # Configure Blueprint
 openrec_bp = APIBlueprint(
     name='openrec',
     import_name=__name__,
-    url_prefix='/openrec'
+    url_prefix='/api/openrec'
 )
 
 
@@ -120,15 +119,11 @@ def queue_out(queue_id: int) -> dict:
 
 @openrec_bp.get('/queue')
 @openrec_bp.output(QueueOut(many=True))
-@jwt_required()
-@perms_required(['admin', 'openrec'])
 def get_current_queue():
     return get_queue()
 
 
 @openrec_bp.get('/availability')
-@jwt_required()
-@perms_required(['admin', 'openrec'])
 def get_availability() -> bool:
     availability = get_computer_availability()
     return availability

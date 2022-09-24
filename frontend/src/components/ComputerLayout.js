@@ -6,21 +6,22 @@ import Grid from "@mui/material/Unstable_Grid2";
 import ComputerButton from "./ComputerButton";
 import axios from "axios";
 
-const ComputerLayout = () => {
+const ComputerLayout = ({ setCompStatusChange }) => {
   const [initialData, setInitialData] = useState({});
+
   useEffect(() => {
     axios
-      .get(`http://localhost:5050/openrec/`, {
+      .get(`/api/openrec/`, {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
-        }})
+        },
+      })
       .then((response) => {
         const data = response.data;
         const initDataDict = {};
         for (let i = 0; i < data.length; i++) {
           initDataDict[data[i]["id"]] = data[i];
         }
-        console.log(initDataDict);
         setInitialData(initDataDict);
       })
       .catch((error) => {
@@ -41,6 +42,7 @@ const ComputerLayout = () => {
                   <Grid key={i} xsOffset={2} xs={1}>
                     <ComputerButton
                       ID={i + 1}
+                      setCompStatusChange={setCompStatusChange}
                       initData={
                         i + 1 in initialData ? initialData[i + 1] : null
                       }
@@ -52,6 +54,7 @@ const ComputerLayout = () => {
                   <Grid key={i} xs={1}>
                     <ComputerButton
                       ID={i + 1}
+                      setCompStatusChange={setCompStatusChange}
                       initData={
                         i + 1 in initialData ? initialData[i + 1] : null
                       }
@@ -70,6 +73,7 @@ const ComputerLayout = () => {
                   <Grid key={i} xsOffset={1} xs={1}>
                     <ComputerButton
                       ID={i + 1 + 12}
+                      setCompStatusChange={setCompStatusChange}
                       initData={
                         i + 1 + 12 in initialData
                           ? initialData[i + 1 + 12]
@@ -83,6 +87,7 @@ const ComputerLayout = () => {
                   <Grid key={i} xs={1}>
                     <ComputerButton
                       ID={i + 1 + 12}
+                      setCompStatusChange={setCompStatusChange}
                       initData={
                         i + 1 + 12 in initialData
                           ? initialData[i + 1 + 12]

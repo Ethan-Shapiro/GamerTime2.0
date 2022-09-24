@@ -1,48 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Backdrop, Box, Button, Typography } from "@mui/material";
 
-const Overlay = ({
-  open,
-  setOpen,
-  setOverlayResponse,
-  startTimestampMS,
-  btn1Text,
-}) => {
-  const [counter, setCounter] = useState("0h 0m 0s");
-
-  const updateCounter = () => {
-    if (startTimestampMS === "") return;
-    const now = Date.now();
-
-    // Find the distance between now and the count down date
-    const timeElapsed = now - startTimestampMS;
-
-    // Time calculations for days, hours, minutes and seconds
-    var hours = Math.floor(
-      (timeElapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-    );
-    var minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
-
-    // Display the result in the element with id="overlayTimer"
-    const timeString = hours + "h " + minutes + "m " + seconds + "s";
-    setCounter(timeString);
-  };
-
-  // initial update of counter so it doesn't lag
-  useEffect(() => {
-    if (!open) {
-      setCounter("0h 0m 0s");
-      return;
-    }
-    updateCounter();
-  }, [open]);
-
-  useEffect(() => {
-    if (startTimestampMS === "" || !open) return;
-    setTimeout(updateCounter, 1000);
-  }, [counter]);
-
+const Overlay = ({ open, setOpen, setOverlayResponse, btn1Text, counter }) => {
   const handleClose = () => {
     setOpen(false);
   };

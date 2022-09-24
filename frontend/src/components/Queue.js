@@ -3,20 +3,21 @@ import QueueItem from "./QueueItem";
 import { Stack, Container, TextField, Button } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import axios from "axios";
-const Queue = () => {
+const Queue = ({ compStatusChange, setCompStatusChange }) => {
   const [items, setItems] = useState([]);
   const [firstname, setFirstName] = useState("");
-  const [lastname, setLastname] = useState("");
+  const [lastname, setLastInitial] = useState("");
 
   // Load initial queue items
   useEffect(() => {
+    if (!compStatusChange) return;
     axios
-      .get("http://localhost:5050/openrec/availability")
+      .get("/api/openrec/availability")
       .then((response) => {
         const nextAvailableIDs = response.data;
 
         axios
-          .get("http://localhost:5050/openrec/queue")
+          .get("/api/openrec/queue")
           .then((response) => {
             const data = response.data;
 
@@ -31,7 +32,7 @@ const Queue = () => {
             }
             setItems(newItems);
             setFirstName("");
-            setLastname("");
+            setLastInitial("");
           })
           .catch((error) => {
             if (error.response) {
@@ -44,13 +45,14 @@ const Queue = () => {
           console.log(error.response);
         }
       });
-  }, []);
+    setCompStatusChange(false);
+  }, [compStatusChange]);
 
   const addToQueue = () => {
     // TODO request to add to server
     // server returns the next available pc
     axios
-      .get("http://localhost:5050/openrec/availability", {
+      .get("/api/openrec/availability", {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },
@@ -60,7 +62,7 @@ const Queue = () => {
 
         axios
           .post(
-            "http://localhost:5050/openrec/queue",
+            "/api/openrec/queue",
             {
               first_name: firstname,
               last_name: lastname,
@@ -91,7 +93,7 @@ const Queue = () => {
               ],
             ]);
             setFirstName("");
-            setLastname("");
+            setLastInitial("");
           })
           .catch((error) => {
             if (error.response) {
@@ -109,7 +111,7 @@ const Queue = () => {
   const removeFromQueue = (itemID) => {
     // TODO request to remove item from server
     axios
-      .get("http://localhost:5050/openrec/availability", {
+      .get("/api/openrec/availability", {
         headers: {
           Authorization: "Bearer " + localStorage.getItem("jwt"),
         },
@@ -118,7 +120,7 @@ const Queue = () => {
         const nextAvailableIDs = response.data;
 
         axios
-          .delete(`http://localhost:5050/openrec/queue/${itemID}`, {
+          .delete(`/api/openrec/queue/${itemID}`, {
             headers: {
               Authorization: "Bearer " + localStorage.getItem("jwt"),
             },
@@ -155,15 +157,6 @@ const Queue = () => {
 
   return (
     <Stack sx={{ border: 1, borderRadius: "10px" }}>
-      <Grid container>
-        <Grid sx={{ borderBottom: 1 }} xs={8}>
-          <h3>Name</h3>
-        </Grid>
-        <Grid sx={{ borderBottom: 1 }} xs={2}>
-          <h3>ID</h3>
-        </Grid>
-        <Grid sx={{ borderBottom: 1 }} xs={2}></Grid>
-      </Grid>
       <Container>
         <Stack sx={{ my: 1 }}>
           <Grid container>
@@ -183,11 +176,12 @@ const Queue = () => {
               <TextField
                 required
                 id="lastname-input"
-                label="Last"
+                label="Last Initial"
                 variant="outlined"
                 value={lastname}
+                inputProps={{ maxLength: 1 }}
                 onChange={(event) => {
-                  setLastname(event.target.value);
+                  setLastInitial(event.target.value);
                 }}
               />
             </Grid>
@@ -198,6 +192,15 @@ const Queue = () => {
           </Button>
         </Stack>
       </Container>
+      <Grid container>
+        <Grid sx={{ borderBottom: 1 }} xs={8}>
+          <h3>Name</h3>
+        </Grid>
+        <Grid sx={{ borderBottom: 1 }} xs={2}>
+          <h3>PC</h3>
+        </Grid>
+        <Grid sx={{ borderBottom: 1 }} xs={2}></Grid>
+      </Grid>
       <Container sx={{ my: 1, maxHeight: 200, overflow: "auto" }}>
         {items.map((item, i) => (
           <QueueItem

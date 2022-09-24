@@ -1,4 +1,5 @@
 import "./App.css";
+import { useState } from "react";
 import Grid from "@mui/material/Unstable_Grid2";
 import ComputerLayout from "./components/ComputerLayout";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
@@ -13,6 +14,7 @@ const darkTheme = createTheme({
 });
 
 function App() {
+  const [compStatusChange, setCompStatusChange] = useState(true);
   return (
     <div className="App">
       <ThemeProvider theme={darkTheme}>
@@ -21,10 +23,16 @@ function App() {
           <Navbar navbarLabel="Home"></Navbar>
           <Grid container columnSpacing={1}>
             <Grid xs={12} sm={9}>
-              <ComputerLayout></ComputerLayout>
+              <ComputerLayout
+                compStatusChange={compStatusChange}
+                setCompStatusChange={setCompStatusChange}
+              ></ComputerLayout>
             </Grid>
             <Grid xs={12} sm={3}>
-              <Queue></Queue>
+              <Queue
+                setCompStatusChange={setCompStatusChange}
+                compStatusChange={compStatusChange}
+              ></Queue>
             </Grid>
           </Grid>
         </body>

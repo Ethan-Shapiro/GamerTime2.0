@@ -5,8 +5,7 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 from flask import current_app as app
 from application import apscheduler
-from . import db, login_manager
-from flask_login import UserMixin
+from . import db
 import json
 from datetime import date, datetime, timezone, timedelta
 import zoneinfo
@@ -38,12 +37,7 @@ EMPTY_STATUS_CODE = 0
 pacifictz = zoneinfo.ZoneInfo("US/Pacific")
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User.query.get(int(user_id))
-
-
-class User(db.Model, UserMixin):
+class User(db.Model):
     """
     Loads existing User table from PostgreSQL
     """

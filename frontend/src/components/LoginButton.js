@@ -39,33 +39,21 @@ const LoginOverlay = () => {
   };
 
   const attemptSignOut = () => {
-    axios
-      .get("http://localhost:5050/auth/logout", {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("jwt"),
-        },
-      })
-      .then((response) => {
-        if (response.data["success"]) {
-          localStorage.removeItem("jwt");
-          setLoginStatus(false);
-        } else {
-          // say incorrect login or something
-          setLoginStatus(true);
-        }
-      })
-      .catch((error) => {
-        console.log(error.response);
-      });
+    localStorage.removeItem("jwt");
+    setLoginStatus(false);
   };
 
   const attemptLogin = () => {
+    console.log("Attempting to login!");
+    console.log(email);
+    console.log(password);
     axios
-      .post("http://localhost:5050/auth/login", {
+      .post("/api/auth/login", {
         email: email,
         password: password,
       })
       .then((response) => {
+        console.log(response);
         if (response.data["success"]) {
           const accessToken = response.data["access_token"];
           localStorage.setItem("jwt", accessToken);

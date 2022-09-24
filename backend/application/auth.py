@@ -6,7 +6,6 @@ from apiflask import APIBlueprint, Schema
 from apiflask.fields import String, Boolean
 from flask import current_app as app
 from application.models import query_user, create_user
-from flask_login import login_user, current_user, logout_user, login_required
 from custom_decorators import perms_required
 from flask_jwt_extended import jwt_required, create_access_token
 from flask_jwt_extended import get_jwt
@@ -15,7 +14,7 @@ from flask_jwt_extended import get_jwt
 auth_bp = APIBlueprint(
     name='auth',
     import_name=__name__,
-    url_prefix='/auth'
+    url_prefix='/api/auth'
 )
 
 
@@ -69,12 +68,7 @@ def logout() -> Tuple[bool, str]:
     Returns:
         Tuple[bool, str]: A success boolean and a message.
     """
-    print(get_jwt())
-    try:
-        result = logout_user()
-    except:
-        return {'success': result, 'message': 'Failed to logout user!'}
-    return {'success': result, 'message': 'User logged out!'}
+    return {'success': True, 'message': 'User logged out!'}
 
 
 @auth_bp.post('/register')
