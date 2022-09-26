@@ -26,7 +26,6 @@ def create_app():
     app = APIFlask(__name__, static_folder='react-app/build',
                    instance_relative_config=False)
     app.config.from_object(DevelopmentConfig)
-
     # sess = Session(app)
 
     db.init_app(app)

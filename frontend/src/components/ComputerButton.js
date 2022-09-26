@@ -10,34 +10,18 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
   const [open, setOpen] = useState(false);
   const [overlayResponse, setOverlayResponse] = useState(false);
   const [status, setStatus] = useState(0);
-  const [timestampMS, setTimestampMS] = useState("");
+  const [timestampMS, setTimestampMS] = useState(0);
   const [overlayBtn1, setOverlayBtn1] = useState("");
   const [initialized, setInitialized] = useState(false);
-  const [counter, setCounter] = useState("0h 0m 0s");
+  const [counter, setCounter] = useState("00:00:00");
   const [hoursElapsed, setHoursElapsed] = useState(0);
+  const [intervalTimer, setIntervalTimer] = useState(undefined);
 
-  const updateCounter = (timestamp = null) => {
-    if (timestampMS === "" && timestamp === null) return;
-    const now = Date.now();
-
-    // Find the distance between now and the count down date
-    const timeElapsed = now - timestampMS;
-
-    // Time calculations for days, hours, minutes and seconds
-    var hours = Math.floor(
-      (timeElapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
-    );
-    var minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
-
-    if (hoursElapsed !== hours) {
-      setHoursElapsed(hours);
-    }
-
-    // Display the result in the element with id="overlayTimer"
-    const timeString = hours + "h " + minutes + "m " + seconds + "s";
-    setCounter(timeString);
-  };
+  useEffect(() => {
+    if (initData === null || initialized) return;
+    setInitialized(true);
+    handleInUseData(initData);
+  }, []);
 
   // Updates the color of the computer button as the person is there for longer
   useEffect(() => {
@@ -50,37 +34,18 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
     }
   }, [hoursElapsed]);
 
-  useEffect(() => {
-    if (timestampMS === "") return;
-    setTimeout(updateCounter, 1000);
-  }, [counter]);
-
-  useEffect(() => {
-    if (initData === null || initialized) return;
-    setInitialized(true);
-    handleInUseData(initData);
-  });
-
   const openOverlay = () => {
     setOpen(true);
     if (status === 0) {
       // open the not in use overlay
       setOverlayBtn1("Start");
-    } else if (backgroundColor === "red") {
+    } else if (status === -1) {
       // open enable pc overlay
       setBackgroundColor("red");
     } else if (status > 0) {
       // open end use overlay
       setOverlayBtn1("End");
     }
-  };
-
-  const handleInUseData = (data) => {
-    const startTimestamp = data["start_timestamp"];
-    const startTimestampMS = parseInt(startTimestamp) * 1000;
-    setTimestampMS(startTimestampMS);
-    setStatus(data["status"]);
-    updateCounter(startTimestampMS);
   };
 
   useEffect(() => {
@@ -97,12 +62,63 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
     setCompStatusChange(true);
   }, [status]);
 
+  useEffect(() => {
+    const updateCounter = () => {
+      console.log(timestampMS);
+      if (timestampMS === 0) return;
+
+      const now = Date.now();
+
+      // Find the distance between now and the count down date
+      const timeElapsed = now - timestampMS;
+
+      // Time calculations for days, hours, minutes and seconds
+      var hours = Math.floor(
+        (timeElapsed % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+      );
+      var minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
+      var seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
+
+      if (hoursElapsed !== hours) {
+        setHoursElapsed(hours);
+      }
+
+      let minutesString = "";
+      if (minutes < 10) {
+        minutesString = "0" + minutes;
+      } else {
+        minutesString += minutes;
+      }
+
+      let secondsString = "";
+      if (seconds < 10) {
+        secondsString = "0" + seconds;
+      } else {
+        secondsString += seconds;
+      }
+
+      // Display the result in the element with id="overlayTimer"
+      const timeString =
+        "0" + hours + ":" + minutesString + ":" + secondsString;
+      setCounter(timeString);
+    };
+    updateCounter(timestampMS);
+    const interval = setInterval(updateCounter, 1000);
+    setIntervalTimer(interval);
+  }, [timestampMS, hoursElapsed]);
+
+  const handleInUseData = (data) => {
+    const startTimestamp = data["start_timestamp"];
+    const startTimestampMS = parseInt(startTimestamp) * 1000;
+    setTimestampMS(startTimestampMS);
+    setStatus(data["status"]);
+  };
+
   const handleStop = () => {
-    setTimestampMS("");
+    setTimestampMS(0);
     setStatus(0);
-    setTimeout(() => {
-      setCounter("0h 0m 0s");
-    }, 500);
+    setCounter("00:00:00");
+    clearInterval(intervalTimer);
   };
 
   const setInUse = () => {
@@ -195,7 +211,7 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
             fontSize: "1.1vw",
             textTransform: "lowercase",
             top: "-5%",
-            left: "25%",
+            left: "20%",
             transform: "translateX(-30%)",
           }}
         >
