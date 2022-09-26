@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Paper, Box, Button, Typography } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import "./ComputerButton.css";
@@ -15,21 +15,22 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
   const [initialized, setInitialized] = useState(false);
   const [counter, setCounter] = useState("00:00:00");
   const [hoursElapsed, setHoursElapsed] = useState(0);
-  const [intervalTimer, setIntervalTimer] = useState(undefined);
+  const intervalTimer = useRef(undefined);
+  const prevHoursElapsed = useRef(0);
 
   useEffect(() => {
     if (initData === null || initialized) return;
     setInitialized(true);
     handleInUseData(initData);
-  }, []);
+  }, [initData]);
 
   // Updates the color of the computer button as the person is there for longer
   useEffect(() => {
-    if (hoursElapsed >= 5) {
+    if (hoursElapsed >= 3) {
       setBackgroundColor("red");
-    } else if (hoursElapsed >= 4) {
-      setBackgroundColor("orange");
     } else if (hoursElapsed >= 2) {
+      setBackgroundColor("orange");
+    } else if (hoursElapsed >= 1) {
       setBackgroundColor("yellow");
     }
   }, [hoursElapsed]);
@@ -64,7 +65,6 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
 
   useEffect(() => {
     const updateCounter = () => {
-      console.log(timestampMS);
       if (timestampMS === 0) return;
 
       const now = Date.now();
@@ -79,8 +79,17 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
       var minutes = Math.floor((timeElapsed % (1000 * 60 * 60)) / (1000 * 60));
       var seconds = Math.floor((timeElapsed % (1000 * 60)) / 1000);
 
-      if (hoursElapsed !== hours) {
-        setHoursElapsed(hours);
+      const totalMinutes = hours * 60 + minutes;
+
+      if (totalMinutes > 120 && prevHoursElapsed.current !== 120) {
+        setHoursElapsed(120);
+        prevHoursElapsed.current = 120;
+      } else if (totalMinutes > 90 && prevHoursElapsed.current !== 90) {
+        setHoursElapsed(90);
+        prevHoursElapsed.current = 90;
+      } else if (totalMinutes > 60 && prevHoursElapsed.current !== 60) {
+        setHoursElapsed(60);
+        prevHoursElapsed.current = 60;
       }
 
       let minutesString = "";
@@ -102,9 +111,11 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
         "0" + hours + ":" + minutesString + ":" + secondsString;
       setCounter(timeString);
     };
+    if (intervalTimer.current !== undefined) return;
     updateCounter(timestampMS);
+    if (timestampMS === 0) return;
     const interval = setInterval(updateCounter, 1000);
-    setIntervalTimer(interval);
+    intervalTimer.current = interval;
   }, [timestampMS, hoursElapsed]);
 
   const handleInUseData = (data) => {
@@ -118,7 +129,8 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
     setTimestampMS(0);
     setStatus(0);
     setCounter("00:00:00");
-    clearInterval(intervalTimer);
+    clearInterval(intervalTimer.current);
+    intervalTimer.current = undefined;
   };
 
   const setInUse = () => {
@@ -155,10 +167,10 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
       .then((response) => {
         const data = response.data;
         console.log(data);
-        if (data["success"]) {
-          handleStop();
-        } else if (data["status"] > 0) {
+        if (data["status"] > 0) {
           handleInUseData(data);
+        } else {
+          handleStop();
         }
       })
       .catch((error) => {

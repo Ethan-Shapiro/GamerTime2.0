@@ -44,9 +44,6 @@ const LoginOverlay = () => {
   };
 
   const attemptLogin = () => {
-    console.log("Attempting to login!");
-    console.log(email);
-    console.log(password);
     axios
       .post("/api/auth/login", {
         email: email,
