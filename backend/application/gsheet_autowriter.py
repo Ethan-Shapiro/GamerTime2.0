@@ -5,7 +5,6 @@ import json
 import os
 from datetime import date, datetime
 from .models import get_days_usages, query_users, get_openrec_days_usages
-from . import apscheduler
 from gspread_formatting import *
 
 
@@ -19,7 +18,6 @@ CURRENT_SHEET_ID = "1AErY7nT-7nYShnLenN3KjRMnst1xh_EIsv-76ybDfqI"
 pacifictz = zoneinfo.ZoneInfo("US/Pacific")
 
 
-# @apscheduler.task('interval', id='testing_apscheduler', seconds=10)
 def testing_print():
     print("Apscheduler worked!")
 
@@ -197,9 +195,6 @@ def write_openrec_usages(worksheet, usages: list):
     return cells
 
 
-# save_openrec_usages()
-
-
 def save_esports_usages():
     # Get the days usage and date from database
     usages, date = get_days_usages()
@@ -229,17 +224,13 @@ def save_esports_usages():
     format_sheet(worksheet, cells)
 
 
-# @apscheduler.task('interval', id='nightly_update', hours=24, start_date='2022-09-6 22:07:00', misfire_grace_time=900)
-# @apscheduler.task('interval', id='nightly_gsheet_update', seconds=30, misfire_grace_time=900)
 def nightly_update():
     """
     Creates and updates the google sheet every night at 11:50pm for the entries from the last day.
     """
-    app = apscheduler.app
-    with app.app_context():
-        print("Started nightly update")
-        print(datetime.utcnow())
-        openrec_successful = save_openrec_usages()
+    print("Started nightly update")
+    print(datetime.utcnow())
+    openrec_successful = save_openrec_usages()
 
-        print("Successfully updated the computer stuff for the night.")
-        return "Completed"
+    print("Successfully updated the computer stuff for the night.")
+    return "Completed"

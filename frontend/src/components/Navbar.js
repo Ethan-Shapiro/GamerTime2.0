@@ -6,7 +6,7 @@ import Button from "@mui/material/Button";
 import { Box } from "@mui/system";
 import LoginOverlay from "./LoginButton";
 
-const Navbar = ({ navbarLabel }) => {
+const Navbar = ({ navbarLabel, addMessage }) => {
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -19,7 +19,7 @@ const Navbar = ({ navbarLabel }) => {
           >
             {navbarLabel}
           </Typography>
-          <LoginOverlay></LoginOverlay>
+          <LoginOverlay addMessage={addMessage}></LoginOverlay>
         </Toolbar>
       </AppBar>
     </Box>

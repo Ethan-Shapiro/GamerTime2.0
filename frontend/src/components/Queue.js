@@ -3,7 +3,7 @@ import QueueItem from "./QueueItem";
 import { Stack, Container, TextField, Button } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import axios from "axios";
-const Queue = ({ compStatusChange, setCompStatusChange }) => {
+const Queue = ({ compStatusChange, setCompStatusChange, addMessage }) => {
   const [items, setItems] = useState([]);
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastInitial] = useState("");
@@ -97,6 +97,7 @@ const Queue = ({ compStatusChange, setCompStatusChange }) => {
           })
           .catch((error) => {
             if (error.response) {
+              addMessage("Unauthorized! Please login!", "error");
               console.log(error.response);
             }
           });

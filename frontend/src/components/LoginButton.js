@@ -16,7 +16,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import axios from "axios";
 
-const LoginOverlay = () => {
+const LoginOverlay = ({ addMessage }) => {
   const [loggedIn, setLoginStatus] = useState(false);
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -39,6 +39,7 @@ const LoginOverlay = () => {
   };
 
   const attemptSignOut = () => {
+    addMessage("Successfully signed out!", "success");
     localStorage.removeItem("jwt");
     setLoginStatus(false);
   };
@@ -55,9 +56,11 @@ const LoginOverlay = () => {
           const accessToken = response.data["access_token"];
           localStorage.setItem("jwt", accessToken);
           setLoginStatus(true);
+          addMessage("Login Successful!", "success");
         } else {
           // say incorrect login or something
           setLoginStatus(false);
+          addMessage("Failed to login!", "error");
         }
       })
       .catch((error) => {

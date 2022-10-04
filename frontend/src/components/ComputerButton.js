@@ -5,7 +5,7 @@ import "./ComputerButton.css";
 import Overlay from "./Overlay";
 import axios from "axios";
 
-const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
+const ComputerButton = ({ ID, initData, setCompStatusChange, addMessage }) => {
   const [backgroundColor, setBackgroundColor] = useState("grey");
   const [open, setOpen] = useState(false);
   const [overlayResponse, setOverlayResponse] = useState(false);
@@ -153,6 +153,7 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
       .catch((error) => {
         if (error.response) {
           console.log(error.response);
+          addMessage("Unauthorized Request! Please login!", "error");
         }
       });
   };
@@ -168,6 +169,7 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
         const data = response.data;
         console.log(data);
         if (data["status"] > 0) {
+          addMessage(`Different computer ${ID} session started!`, "info");
           handleInUseData(data);
         } else {
           handleStop();
@@ -175,6 +177,7 @@ const ComputerButton = ({ ID, initData, setCompStatusChange }) => {
       })
       .catch((error) => {
         if (error.response) {
+          addMessage("Unauthorized Request! Please login!", "error");
           console.log(error.response);
         }
       });

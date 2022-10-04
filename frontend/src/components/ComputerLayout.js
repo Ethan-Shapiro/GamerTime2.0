@@ -6,7 +6,7 @@ import Grid from "@mui/material/Unstable_Grid2";
 import ComputerButton from "./ComputerButton";
 import axios from "axios";
 
-const ComputerLayout = ({ setCompStatusChange }) => {
+const ComputerLayout = ({ setCompStatusChange, addMessage }) => {
   const [initialData, setInitialData] = useState({});
 
   useEffect(() => {
@@ -43,6 +43,7 @@ const ComputerLayout = ({ setCompStatusChange }) => {
                     <ComputerButton
                       ID={i + 1}
                       setCompStatusChange={setCompStatusChange}
+                      addMessage={addMessage}
                       initData={
                         i + 1 in initialData ? initialData[i + 1] : null
                       }
@@ -55,6 +56,7 @@ const ComputerLayout = ({ setCompStatusChange }) => {
                     <ComputerButton
                       ID={i + 1}
                       setCompStatusChange={setCompStatusChange}
+                      addMessage={addMessage}
                       initData={
                         i + 1 in initialData ? initialData[i + 1] : null
                       }
@@ -74,6 +76,7 @@ const ComputerLayout = ({ setCompStatusChange }) => {
                     <ComputerButton
                       ID={i + 1 + 12}
                       setCompStatusChange={setCompStatusChange}
+                      addMessage={addMessage}
                       initData={
                         i + 1 + 12 in initialData
                           ? initialData[i + 1 + 12]
@@ -88,6 +91,7 @@ const ComputerLayout = ({ setCompStatusChange }) => {
                     <ComputerButton
                       ID={i + 1 + 12}
                       setCompStatusChange={setCompStatusChange}
+                      addMessage={addMessage}
                       initData={
                         i + 1 + 12 in initialData
                           ? initialData[i + 1 + 12]
