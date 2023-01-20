@@ -7,8 +7,9 @@ from apiflask.fields import String, Boolean
 from flask import current_app as app
 from application.models import query_user, create_user
 from custom_decorators import perms_required
-from flask_jwt_extended import jwt_required, create_access_token
+from flask_jwt_extended import jwt_required, create_access_token, get_jwt_identity, create_refresh_token
 from flask_jwt_extended import get_jwt
+from flask import jsonify
 
 # Configure Blueprint
 auth_bp = APIBlueprint(
@@ -32,6 +33,24 @@ class LoginOut(AuthOut):
     access_token = String()
 
 
+@auth_bp.post("/refresh")
+@jwt_required(refresh=True)
+def token_refresh() -> dict:
+    """
+    Returns a new access token with the same identity and additional claims
+    as the refresh token if the refresh token is valid
+
+    Returns:
+        dict: Returns success and a new access token
+    """
+    perms = get_jwt()['permission']
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity, additional_claims={
+        'permission': perms})
+    print(f'created new access token for {identity}')
+    return jsonify(success=True, access_token=access_token)
+
+
 @auth_bp.post('/login')
 @auth_bp.input(AuthIn)
 @auth_bp.output(LoginOut)
@@ -53,15 +72,19 @@ def login_page(data) -> Tuple[bool, str]:
         # login_user(user, remember=False)
         access_token = create_access_token(identity=email, additional_claims={
                                            'permission': user.permissions})
-        return {'success': True, 'message': 'User logged in!', 'access_token': access_token}
+        # create refresh token
+        refresh_token = create_refresh_token(identity=email, additional_claims={
+            'permission': user.permissions})
+        response = jsonify(
+            {'success': True, 'message': 'User logged in!',
+             'access_token': access_token, 'refresh_token': refresh_token})
+        return response
 
     return {'success': False, 'message': 'Incorrect credentials!'}
 
 
-@auth_bp.route('/logout')
+@auth_bp.post('/logout')
 @auth_bp.output(AuthOut)
-@jwt_required()
-@perms_required('admin')
 def logout() -> Tuple[bool, str]:
     """Endpoint that logs out the current logged in user.
 
@@ -80,10 +103,11 @@ def logout() -> Tuple[bool, str]:
 @jwt_required()
 @perms_required('admin')
 def register_page(data) -> Tuple[bool, str]:
-    """Endpoint that creates a new user on the database.
+    """
+    Endpoint that creates a new user on the database.
 
     Args:
-        data (dict): dictionary containing input data
+        data (dict): A dictionary containing form data
 
     Returns:
         Tuple[bool, str]: A success boolean and a message.

@@ -5,17 +5,18 @@ from flask import current_app as app
 from . import ComputerIDIn
 from flask_login import login_required
 from custom_decorators import permissions_required
-from application.models import end_pc_use, set_pc_in_use, reset_pc_statuses, get_db_pc_usages
+from application.models import end_pc_use, set_pc_in_use, get_db_pc_usages
 
 # Configure Blueprint
 esports_bp = APIBlueprint(
     name='esports',
     import_name=__name__,
-    url_prefix='/esports'
+    url_prefix='/api/esports'
 )
 
 
 class EsportsIn(ComputerIDIn):
+    name = String()
     email = String()
 
 
@@ -61,6 +62,8 @@ def set_usage(data: dict) -> dict:
     Returns:
         dict: The new usage id of the computer.
     """
+    # check player status in DSE
+
     # create a new usage using
     success, results = set_pc_in_use(data['computer_id'], data['email'])
     return {'success': success} | results

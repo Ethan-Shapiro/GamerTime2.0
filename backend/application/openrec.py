@@ -1,10 +1,11 @@
 from apiflask import APIBlueprint, Schema
 from apiflask.fields import String, Integer, Boolean
 from flask import current_app as app
+from flask import jsonify
 from . import ComputerIDIn
 from custom_decorators import perms_required
 from flask_jwt_extended import jwt_required
-from application.models import end_pc_use, set_pc_in_use, get_queue, add_to_queue, remove_from_queue, get_db_pc_usages, get_computer_availability
+from application.models import end_pc_use, set_pc_in_use, get_queue, add_to_queue, remove_from_queue, get_db_pc_usages, get_computer_availability, get_esports_conflicting_hrs
 
 # Configure Blueprint
 openrec_bp = APIBlueprint(
@@ -55,7 +56,31 @@ def get_usages() -> dict:
     """
     # Retrieve all current usages and format
     usages = get_db_pc_usages(esports=False)
-    return usages
+
+    # retrieve any esports hours that overlap
+    # with openrec hours
+    conflicting_hrs = get_esports_conflicting_hrs()
+
+    # add conflicting hours to output if they exist
+    output = {}
+
+    # combine usages and conflicts
+    # reformat data to {computer_id: usage + conflict}
+    for usage in usages:
+        # add usage items first
+        output[usage['id']] = usage
+
+    # add conflicts
+    for comp_id in conflicting_hrs:
+        # add to existing data if possible
+        if comp_id in output:
+            output[comp_id]['conflict'] = conflicting_hrs[comp_id]
+        else:  # create new data
+            output[comp_id] = {'conflict': conflicting_hrs[comp_id]}
+
+    print(output)
+
+    return jsonify(output)
 
 
 @openrec_bp.post('/')

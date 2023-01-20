@@ -16,7 +16,7 @@ import VisibilityOff from "@mui/icons-material/VisibilityOff";
 import OutlinedInput from "@mui/material/OutlinedInput";
 import axios from "axios";
 
-const LoginOverlay = ({ addMessage }) => {
+const LoginOverlay = ({ addMessage, getAccessToken }) => {
   const [loggedIn, setLoginStatus] = useState(false);
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -25,9 +25,11 @@ const LoginOverlay = ({ addMessage }) => {
 
   // Check if token is present and display login or sign out accordingly
   useEffect(() => {
-    if (localStorage.getItem("jwt") !== null) {
-      setLoginStatus(true);
-    }
+    getAccessToken().then((accessToken) => {
+      if (accessToken !== null) {
+        setLoginStatus(true);
+      }
+    });
   }, []);
 
   const handleClick = () => {
@@ -41,6 +43,7 @@ const LoginOverlay = ({ addMessage }) => {
   const attemptSignOut = () => {
     addMessage("Successfully signed out!", "success");
     localStorage.removeItem("jwt");
+    localStorage.removeItem("jwt_refresh");
     setLoginStatus(false);
   };
 
@@ -53,8 +56,12 @@ const LoginOverlay = ({ addMessage }) => {
       .then((response) => {
         console.log(response);
         if (response.data["success"]) {
+          console.log(response.data);
           const accessToken = response.data["access_token"];
+          const refreshToken = response.data["refresh_token"];
           localStorage.setItem("jwt", accessToken);
+          localStorage.setItem("jwt_refresh", refreshToken);
+          console.log(localStorage.getItem("jwt_refresh"));
           setLoginStatus(true);
           addMessage("Login Successful!", "success");
         } else {

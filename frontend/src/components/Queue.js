@@ -3,7 +3,12 @@ import QueueItem from "./QueueItem";
 import { Stack, Container, TextField, Button } from "@mui/material";
 import Grid from "@mui/material/Unstable_Grid2";
 import axios from "axios";
-const Queue = ({ compStatusChange, setCompStatusChange, addMessage }) => {
+const Queue = ({
+  compStatusChange,
+  setCompStatusChange,
+  addMessage,
+  getAccessToken,
+}) => {
   const [items, setItems] = useState([]);
   const [firstname, setFirstName] = useState("");
   const [lastname, setLastInitial] = useState("");
@@ -51,109 +56,113 @@ const Queue = ({ compStatusChange, setCompStatusChange, addMessage }) => {
   const addToQueue = () => {
     // TODO request to add to server
     // server returns the next available pc
-    axios
-      .get("/api/openrec/availability", {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("jwt"),
-        },
-      })
-      .then((response) => {
-        const nextAvailableIDs = response.data;
+    getAccessToken().then((accessToken) => {
+      axios
+        .get("/api/openrec/availability", {
+          headers: {
+            Authorization: accessToken,
+          },
+        })
+        .then((response) => {
+          const nextAvailableIDs = response.data;
 
-        axios
-          .post(
-            "/api/openrec/queue",
-            {
-              first_name: firstname,
-              last_name: lastname,
-            },
-            {
-              headers: {
-                Authorization: "Bearer " + localStorage.getItem("jwt"),
+          axios
+            .post(
+              "/api/openrec/queue",
+              {
+                first_name: firstname,
+                last_name: lastname,
               },
-            }
-          )
-          .then((response) => {
-            const data = response.data;
-            if (!data["success"]) return;
-            const name = data["name"];
-            const queueID = data["id"];
+              {
+                headers: {
+                  Authorization: accessToken,
+                },
+              }
+            )
+            .then((response) => {
+              const data = response.data;
+              if (!data["success"]) return;
+              const name = data["name"];
+              const queueID = data["id"];
 
-            // success then add item to queue locally
-            const newItems = [];
-            for (let i = 0; i < items.length; i++) {
-              newItems.push([items[i][0], nextAvailableIDs[i], items[i][2]]);
-            }
-            setItems([
-              ...newItems,
-              [
-                name,
-                nextAvailableIDs[items.length === 0 ? 0 : items.length],
-                queueID,
-              ],
-            ]);
-            setFirstName("");
-            setLastInitial("");
-          })
-          .catch((error) => {
-            if (error.response) {
-              addMessage("Unauthorized! Please login!", "error");
-              console.log(error.response);
-            }
-          });
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log(error.response);
-        }
-      });
+              // success then add item to queue locally
+              const newItems = [];
+              for (let i = 0; i < items.length; i++) {
+                newItems.push([items[i][0], nextAvailableIDs[i], items[i][2]]);
+              }
+              setItems([
+                ...newItems,
+                [
+                  name,
+                  nextAvailableIDs[items.length === 0 ? 0 : items.length],
+                  queueID,
+                ],
+              ]);
+              setFirstName("");
+              setLastInitial("");
+            })
+            .catch((error) => {
+              if (error.response) {
+                addMessage("Unauthorized! Please login!", "error");
+                console.log(error.response);
+              }
+            });
+        })
+        .catch((error) => {
+          if (error.response) {
+            console.log(error.response);
+          }
+        });
+    });
   };
 
   const removeFromQueue = (itemID) => {
     // TODO request to remove item from server
-    axios
-      .get("/api/openrec/availability", {
-        headers: {
-          Authorization: "Bearer " + localStorage.getItem("jwt"),
-        },
-      })
-      .then((response) => {
-        const nextAvailableIDs = response.data;
+    getAccessToken().then((accessToken) => {
+      axios
+        .get("/api/openrec/availability", {
+          headers: {
+            Authorization: accessToken,
+          },
+        })
+        .then((response) => {
+          const nextAvailableIDs = response.data;
 
-        axios
-          .delete(`/api/openrec/queue/${itemID}`, {
-            headers: {
-              Authorization: "Bearer " + localStorage.getItem("jwt"),
-            },
-          })
-          .then((response) => {
-            const data = response.data;
-            if (!data["success"]) return;
+          axios
+            .delete(`/api/openrec/queue/${itemID}`, {
+              headers: {
+                Authorization: accessToken,
+              },
+            })
+            .then((response) => {
+              const data = response.data;
+              if (!data["success"]) return;
 
-            const newItems = items.filter((item, i) => item[2] !== itemID);
+              const newItems = items.filter((item, i) => item[2] !== itemID);
 
-            for (let i = 0; i < newItems.length; i++) {
-              newItems[i] = [
-                newItems[i][0],
-                nextAvailableIDs[i],
-                newItems[i][2],
-              ];
-            }
+              for (let i = 0; i < newItems.length; i++) {
+                newItems[i] = [
+                  newItems[i][0],
+                  nextAvailableIDs[i],
+                  newItems[i][2],
+                ];
+              }
 
-            // success then remove item from queue locally
-            setItems(newItems);
-          })
-          .catch((error) => {
-            if (error.response) {
-              console.log(error.response);
-            }
-          });
-      })
-      .catch((error) => {
-        if (error.response) {
-          console.log(error.response);
-        }
-      });
+              // success then remove item from queue locally
+              setItems(newItems);
+            })
+            .catch((error) => {
+              if (error.response) {
+                console.log(error.response);
+              }
+            });
+        })
+        .catch((error) => {
+          if (error.response) {
+            console.log(error.response);
+          }
+        });
+    });
   };
 
   return (

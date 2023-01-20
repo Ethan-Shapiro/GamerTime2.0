@@ -1,16 +1,10 @@
-from tkinter import E
-from typing import Tuple
-from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import inspect
 from sqlalchemy.exc import IntegrityError
 from flask import current_app as app
 from application import apscheduler
 from . import db
-import json
-from datetime import date, datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta
 import zoneinfo
-import os
-import time
 import re
 from sqlalchemy.sql import expression
 from sqlalchemy.ext.compiler import compiles
@@ -21,17 +15,19 @@ class utcnow(expression.FunctionElement):
     type = DateTime()
     inherit_cache = True
 
+# set our timezone to UTC so all datetime objects inserted are consistent
+
 
 @compiles(utcnow, 'postgresql')
 def pg_utcnow(element, compiler, **kw):
     return "TIMEZONE('utc', CURRENT_TIMESTAMP)"
 
 
+# GLOBAL VAIRABLES
 NUM_COMPUTERS = 26
-
 IN_USE_STATUS_CODE = 1
 DISABLED_STATUS_CODE = -1
-EMPTY_STATUS_CODE = 0
+IDLE_STATUS_CODE = 0
 
 # Intialize timezone
 pacifictz = zoneinfo.ZoneInfo("US/Pacific")
@@ -39,7 +35,7 @@ pacifictz = zoneinfo.ZoneInfo("US/Pacific")
 
 class User(db.Model):
     """
-    Loads existing User table from PostgreSQL
+    Outline for the User model in PSQL 
     """
     id = db.Column('id', db.Integer, primary_key=True)
     email = db.Column('email', db.String, nullable=False)
@@ -66,7 +62,7 @@ class User(db.Model):
 
 class ComputerStatus(db.Model):
     """
-    Loads existing Esports Usages table from PostgreSQL
+    Outline for the Computer Status model in PSQL
     """
     id = db.Column('id', db.Integer, primary_key=True)
     status = db.Column('status', db.Integer, nullable=False)
@@ -82,7 +78,7 @@ class ComputerStatus(db.Model):
 
 class Usage(db.Model):
     """
-    Loads existing User table from PostgreSQL
+    Outline for the Usage model in PSQL
     """
     id = db.Column('id', db.Integer, primary_key=True)
     player_id = db.Column('player_id', db.Integer,
@@ -103,7 +99,7 @@ class Usage(db.Model):
 
 class Player(db.Model):
     """
-    Loads existing Player table from PostgreSQL
+    Outline for the Player model in PSQL
     """
     id = db.Column('id', db.Integer, primary_key=True)
     first_name = db.Column('first_name', db.String(50), nullable=False)
@@ -122,35 +118,76 @@ class Player(db.Model):
 
 class Queue(db.Model):
     """
-    Loads existing Player table from PostgreSQL
+    Outline for the Queue model in PSQL
     """
     id = db.Column('id', db.Integer, primary_key=True)
     name = db.Column('name', db.String)
 
 
-def valid_ucsd_email(email):
+def valid_ucsd_email(email: str) -> bool:
+    """
+    Helper function that takes in an email string
+    and returns True if the email string is a valid ucsd email.
+
+    Args:
+        email (str): An email string to check
+
+    Returns:
+        bool: True if the email string is a valid ucsd email
+    """
+    # ucsd emails must start with only alphanumeric characters
+    # and must end in '@ucsd.edu'
     pattern = re.compile('^[A-Za-z0-9]*@ucsd\.edu$')
     return re.fullmatch(pattern, email)
 
 
-def get_pc_status(computer_id: int):
+def get_esports_conflicting_hrs() -> dict:
     """
-    Returns the pc object at the current computer id.
-    None if the pc doesn't exist
+    Returns a dict of the pc number and the hours that are conflicting that day.
+    Returns None if no hours are conflicting
+
+    Returns:
+        dict: A dictioanry of pairs of pc numbers and a range of conflicting hours.
+    """
+    # TODO use google api to access sheet containing conflicts
+
+    # TODO return the conflicitng times in military time
+
+    # TESTING data
+    return {1: '22:00-24:00', 2: '22:05-24:10'}
+
+
+def get_pc_status(computer_id: int) -> ComputerStatus:
+    """
+    Returns the ComputerStatus object of the given computer id.
+    None if the computer id is invalid.
+
+    Args:
+        computer_id (int): The computer id to get the status of
+
+    Returns:
+        ComputerStatus: An object containing attributes about the computer's status
     """
     computer = ComputerStatus.query.filter_by(id=computer_id).first()
     return computer
 
 
-def get_computer_availability():
+def get_computer_availability() -> list[int]:
+    """
+    Returns a list of computer id's in the order which computers
+    are open followed by the computers being used the longest.
+
+    Returns:
+        list[int]: A list of computer ids
+    """
     statuses = ComputerStatus.query.order_by(
         ComputerStatus.start_timestamp.desc(), ComputerStatus.id).all()
     return [c.id for c in statuses]
 
 
-def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
+def set_pc_in_use(computer_id: int, email=None) -> tuple[bool, dict]:
     """
-    Attempts to set the current pc into use.
+    Attempts to change the status of the computer id to in use.
     Returns whether the query succeeded and a message.
 
     Args:
@@ -197,14 +234,6 @@ def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
     worked = change_pc_status(
         computer, new_usage.id, new_usage.start_timestamp, email)
 
-    # Start auto end timer for 8 hrs
-    iters = 0
-    while iters < 5:
-        timer_started = start_timer_job(new_usage, 8, start_timestamp_seconds)
-        if timer_started:
-            break
-        iters += 1
-
     if email:
         body = {'id': computer_id, 'status': new_usage.id,
                 'email': email}
@@ -217,23 +246,20 @@ def set_pc_in_use(computer_id: int, email=None) -> Tuple[bool, dict]:
     return worked, {'message': "Success!"} | body
 
 
-def start_timer_job(new_usage: Usage, time_hours: int, start_timestamp_seconds: int) -> bool:
-    # Create auto end time X hours later
-    time_in_seconds = time_hours * 60 * 60  # X hours * 60 min * 60 sec
-    end_datetime = start_timestamp_seconds + time_in_seconds
+def change_pc_status(computer: ComputerStatus, status: int, start_timestamp=None, email=None) -> bool:
+    """
+    Changes the status, timestamp, and email of the given computer.
+    Returns True if the change as successful.
 
-    # Start timer for X hour auto ending of session
-    job_id = f'auto_end_{new_usage.id}'
-    apscheduler.add_job(id=job_id, func=end_pc_use,
-                        run_date=datetime.fromtimestamp(end_datetime),
-                        kwargs={'usage_id': new_usage.id,
-                                'computer_id': new_usage.computer_id,
-                                'esports': False,
-                                'scheduled': True})
-    return True
+    Args:
+        computer (ComputerStatus): The computer status to update
+        status (int): The new status.
+        start_timestamp (datetime, optional): The start datetime. Defaults to None.
+        email (str, optional): The email to change the computer status to. Defaults to None.
 
-
-def change_pc_status(computer: ComputerStatus, status: int, start_timestamp=None, email=None):
+    Returns:
+        bool: True when the status change succeeded.
+    """
     computer.status = status
     computer.start_timestamp = start_timestamp
     computer.email = email
@@ -241,13 +267,14 @@ def change_pc_status(computer: ComputerStatus, status: int, start_timestamp=None
         db.session.commit()
     except IntegrityError as ie:
         db.session.rollback()
-        return ie.detail
+        return False
     return True
 
 
-def end_usage_change_status(usage_id: int, computer_id: int):
+def end_usage_change_status(usage_id: int, computer_id: int) -> bool:
     """
-    A method to end the current computer usage and also changes the status of the pc.
+    End the current computer usage and also changes the status of the pc
+    to be the IDLE status.
 
     Parameter(s):
         usage_id (int): The usage id to end.
@@ -264,7 +291,7 @@ def end_usage_change_status(usage_id: int, computer_id: int):
 
     # Set the attributes
     setattr(usage, 'end_timestamp', datetime.utcnow())
-    setattr(computer, 'status', EMPTY_STATUS_CODE)
+    setattr(computer, 'status', IDLE_STATUS_CODE)
     setattr(computer, 'start_timestamp', None)
     setattr(computer, 'email', None)
 
@@ -276,12 +303,20 @@ def end_usage_change_status(usage_id: int, computer_id: int):
         return False
 
 
-def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
+def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False) -> tuple[bool, dict]:
     """
-    A method that ends the given computer usage.
+    Attempts to end the given computer usage by changing computer with given computer id
+    to the IDLE status code. If the PC is being used by a new user, this returns a dictionary
+    containing the new user data.
 
-    Parameter(s):
-        usage_id (int): The usage id to end.
+    Args:
+        usage_id (int): ID of the usage from the frontend
+        computer_id (int): A computer ID to change status
+        esports (bool, optional): Whether the usage is an esports usage. Defaults to False.
+        scheduled (bool, optional): Whether the function call was scheduled . Defaults to False.
+
+    Returns:
+        tuple[bool, dict]: _description_
     """
     # Get the current computer from db
     computer = get_pc_status(computer_id)
@@ -302,7 +337,9 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
         body['status'] = DISABLED_STATUS_CODE
         return False, body
 
-    # If already enabled, do nothing
+    # If the usage_id passed by the front-end
+    # doesn't match the one stored in the server,
+    # that means the front-end is unsynced and we can send the updated data
     if computer.status != usage_id:
         body['status'] = computer.status
         body['message'] = f'Old computer use already ended at computer {computer_id}.'
@@ -312,6 +349,8 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
             body['start_timestamp'] = computer.start_timestamp
         return False, body
 
+    # We must execute the scheduled end
+    #  within the context of the applicaiton
     app = apscheduler.app
     with app.app_context():
         # attempt to end usage on database
@@ -332,20 +371,17 @@ def end_pc_use(usage_id: int, computer_id: int, esports=False, scheduled=False):
         return True, body
 
 
-def reset_pc_statuses():
-    """
-    A method that resets (sets all entries to 0) all pc statuses.
-    """
-    for i in range(0, NUM_COMPUTERS):
-        computer = get_pc_status(i+1)
-        change_pc_status(computer, EMPTY_STATUS_CODE, None, None)
-
-
 # @cache.memoize(timeout=30)
-def get_db_pc_usages(esports=False):
+def get_db_pc_usages(esports=False) -> list[dict]:
     """
-    Returns a list of current esports usage statuses
-    and if esports=False, the start timestamps of each computer as well.
+    Returns a list of usages as dictionaries that are in use.
+    When Esports is true, we add the start timestamp to the dictionary.
+
+    Args:
+        esports (bool, optional): Whether we are accessing esports or not. Defaults to False.
+
+    Returns:
+        list[dict]: List of dictionaries containing attributes from Usages.
     """
     if esports:
         usages = ComputerStatus.query.filter(ComputerStatus.status != 0).with_entities(
@@ -362,14 +398,14 @@ def get_db_pc_usages(esports=False):
     return usages
 
 
-def get_openrec_days_usages():
+def get_openrec_days_usages() -> tuple[list[Usage], datetime]:
     today = datetime.utcnow() - timedelta(hours=24)
     usages = Usage.query.filter(
         Usage.start_timestamp >= today, Usage.player_id == 2).all()
     return usages, today
 
 
-def get_days_usages():
+def get_days_usages() -> tuple[list[Usage], datetime]:
     """
     Returns the usages from today as a list of Usages and today's date.
     """
@@ -378,7 +414,7 @@ def get_days_usages():
     return usages, today
 
 
-def query_users(user_ids: set):
+def query_users(user_ids: set) -> list[User]:
     """
     Returns the information of the given user ids. None if the user doesn't exist.
     """
@@ -450,7 +486,7 @@ def create_user(user_dict: dict) -> User:
     return user
 
 
-def create_usage(user_id: int, computer_id: int):
+def create_usage(user_id: int, computer_id: int) -> Usage:
     """
     Returns a new usage object.
 
@@ -469,7 +505,7 @@ def create_usage(user_id: int, computer_id: int):
     return usage
 
 
-def query_usage(usage_id: int):
+def query_usage(usage_id: int) -> Usage:
     """
     Returns a new usage with the given usage id if it exists.
     None Otherwise
@@ -481,7 +517,7 @@ def query_usage(usage_id: int):
     return usage
 
 
-def recreate_computer_statuses():
+def recreate_computer_statuses() -> bool:
     # can't drop if the table doesn't exist yet
     inspector = inspect(db.engine)
     try:
@@ -501,13 +537,13 @@ def recreate_computer_statuses():
     return True
 
 
-def reset_computer_statuses_table():
+def reset_computer_statuses_table() -> bool:
     try:
         computer_statuses = ComputerStatus.query.all()
         for comp_stat in computer_statuses:
-            setattr(comp_stat, 'status', 0)
-            setattr(comp_stat, 'start_timestamp', None)
-            setattr(comp_stat, 'email', None)
+            # end the computer usage if it is being used
+            if comp_stat.status != 0:
+                end_usage_change_status(comp_stat.status, comp_stat.id)
         db.session.commit()
     except:
         return False
@@ -519,7 +555,7 @@ def drop_computer_table():
     ComputerStatus.__table__.drop(db.engine)
 
 
-def get_queue():
+def get_queue() -> list[dict]:
     queue_items = Queue.query.order_by(Queue.id).all()
     return [{'id': q.id, 'name': q.name} for q in queue_items]
 
@@ -538,7 +574,7 @@ def add_to_queue(first, last):
     return True, {'id': new_queue_item.id, 'name': new_queue_item.name}
 
 
-def remove_from_queue(queue_id):
+def remove_from_queue(queue_id) -> bool:
     try:
         Queue.query.filter_by(id=queue_id).delete()
         db.session.commit()

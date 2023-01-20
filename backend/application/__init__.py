@@ -7,6 +7,7 @@ from config import ProductionConfig, DevelopmentConfig
 from flask_apscheduler import APScheduler
 from flask_httpauth import HTTPTokenAuth
 from flask_jwt_extended import JWTManager
+from datetime import timedelta
 
 
 class ComputerIDIn(Schema):
@@ -23,9 +24,16 @@ def create_app():
     """
     Initializes the Gamer Time application.
     """
+    # intiiaize our app with the relevant config
     app = APIFlask(__name__, static_folder='react-app/build',
                    instance_relative_config=False)
     app.config.from_object(DevelopmentConfig)
+
+    app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(minutes=1)
+    app.config["JWT_REFRESH_TOKEN_EXPIRES"] = timedelta(days=30)
+    app.config["JWT_TOKEN_LOCATION"] = ["headers"]
+    app.config['JWT_REFRESH_COOKIE_PATH'] = '/api/auth/refresh'
+    app.config["JWT_SECRET_KEY"] = "ethan specifically made this secret key"
     # sess = Session(app)
 
     db.init_app(app)

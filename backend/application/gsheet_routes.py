@@ -7,13 +7,13 @@ from application.models import create_player, recreate_computer_statuses, reset_
 
 # Configure Blueprint
 models_bp = APIBlueprint(
-    name='models',
+    name='gsheet',
     import_name=__name__,
-    url_prefix='/api/models'
+    url_prefix='/api/gsheet'
 )
 
 
-class PlayerIn(Schema):
+class EsportsIn(Schema):
     first_name = String(validate=[Length(2, 50)])
     last_name = String(validate=[Length(2, 50)])
     email = String()
@@ -32,9 +32,9 @@ def create_computer_statuses() -> bool:
     return {'success': success}
 
 
-@models_bp.post('/end_all_sessions')
+@models_bp.get('/reset_computer_statuses')
 @perms_required(['admin'])
-def end_computer_sessions() -> bool:
+def reset_computer_statuses() -> bool:
     success = reset_computer_statuses_table()
     return {'success': success}
 
