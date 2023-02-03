@@ -111,6 +111,46 @@ const ComputerButton = ({
     };
   }, [startTimestampMS]);
 
+  function setPopupAttributes(open, text) {
+    setPopupOpen(open);
+    setPopupText(text);
+  }
+
+  function activatePopupIntervals(numIntervals, timeOffsetMin) {
+    const timeOffsetMS = timeOffsetMin * 60 * 1000;
+    const fiveMinInMS = 300000;
+
+    // set timer to open popup 30 minutes before esports
+    const thirtyMinBeforeInMS = Math.max(1000, timeOffsetMS - 6 * fiveMinInMS);
+    setTimeout(
+      () => setPopupAttributes(true, "Esports in 30 minutes"),
+      thirtyMinBeforeInMS
+    );
+
+    // set timer to update text at 15, 10, and 5 minutes
+    const fifteenMinBeforeInMS = Math.max(2000, timeOffsetMS - 3 * fiveMinInMS);
+    setTimeout(
+      () => setPopupAttributes(true, "Esports in 15 minutes"),
+      fifteenMinBeforeInMS
+    );
+
+    const tenMinBeforeInMS = Math.max(3000, timeOffsetMS - 2 * fiveMinInMS);
+    setTimeout(
+      () => setPopupAttributes(true, "Esports in 10 minutes"),
+      tenMinBeforeInMS
+    );
+
+    const fiveMinBeforeInMS = Math.max(4000, timeOffsetMS - fiveMinInMS);
+    setTimeout(
+      () => setPopupAttributes(true, "Esports in 5 minutes"),
+      fiveMinBeforeInMS
+    );
+
+    // At the time of esports, keep popup for 5 minutes after and then close
+    setTimeout(() => setPopupAttributes(true, "Esports now!"), timeOffsetMS);
+    setTimeout(() => setPopupAttributes(false, ""), timeOffsetMS + fiveMinInMS);
+  }
+
   const handleTimeConflict = (initData) => {
     // split into start and end time
     const start_end_time = initData["conflict"].split("-");
@@ -127,13 +167,9 @@ const ComputerButton = ({
     let hourOffset = currDate.getHours() - start_hour;
     let minuteOffset = currDate.getMinutes() - start_minutes;
 
-    // set timer to open popup 30 minutes before esports
-    currDate.setHours(currDate.getHours() + 2);
-    console.log(currDate);
+    const offsetInMin = hourOffset * 60 + minuteOffset;
 
-    // set timer to update text at 15, 10, and 5 minutes
-
-    // set timer to disable computer button until end of esports
+    activatePopupIntervals(4, offsetInMin);
   };
 
   const openOverlay = () => {
@@ -295,7 +331,7 @@ const ComputerButton = ({
       ></Overlay>
       <Tooltip
         title="Esports in 30 minutes"
-        open={true}
+        open={popupOpen}
         placement={"top"}
         arrow
       >

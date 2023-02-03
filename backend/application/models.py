@@ -154,7 +154,7 @@ def get_esports_conflicting_hrs() -> dict:
     # TODO return the conflicitng times in military time
 
     # TESTING data
-    return {1: '22:00-24:00', 2: '22:05-24:10'}
+    return {}
 
 
 def get_pc_status(computer_id: int) -> ComputerStatus:
